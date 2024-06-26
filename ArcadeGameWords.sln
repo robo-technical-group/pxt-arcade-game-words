@@ -3,9 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.35013.160
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArcadeGameWords", "ArcadeGameWords\ArcadeGameWords.csproj", "{7A9AC21F-D4C1-4F21-8697-C1D549400173}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArcadeGameWords", "ArcadeGameWords\ArcadeGameWords.csproj", "{7A9AC21F-D4C1-4F21-8697-C1D549400173}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArcadeGameWords.Client", "ArcadeGameWords.Client\ArcadeGameWords.Client.csproj", "{CBE1DCC5-78BA-4CD7-9EF5-1D11AA28A222}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArcadeGameWords.Client", "ArcadeGameWords.Client\ArcadeGameWords.Client.csproj", "{CBE1DCC5-78BA-4CD7-9EF5-1D11AA28A222}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BloomFilters", "BloomFilters\BloomFilters.csproj", "{B045BA19-EB49-4030-ADAA-AF36FFE06C47}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OldConsoleApps", "OldConsoleApps\OldConsoleApps.csproj", "{5FEF30CD-A7D7-4615-BA8C-28C732E89E8D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +25,14 @@ Global
 		{CBE1DCC5-78BA-4CD7-9EF5-1D11AA28A222}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CBE1DCC5-78BA-4CD7-9EF5-1D11AA28A222}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CBE1DCC5-78BA-4CD7-9EF5-1D11AA28A222}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B045BA19-EB49-4030-ADAA-AF36FFE06C47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B045BA19-EB49-4030-ADAA-AF36FFE06C47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B045BA19-EB49-4030-ADAA-AF36FFE06C47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B045BA19-EB49-4030-ADAA-AF36FFE06C47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FEF30CD-A7D7-4615-BA8C-28C732E89E8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FEF30CD-A7D7-4615-BA8C-28C732E89E8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FEF30CD-A7D7-4615-BA8C-28C732E89E8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FEF30CD-A7D7-4615-BA8C-28C732E89E8D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
