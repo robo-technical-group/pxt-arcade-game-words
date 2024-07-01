@@ -183,6 +183,23 @@ namespace ftss
 
         /**
          * <summary>
+         * Removes multiple elements from this set.
+         * Returns true if every element was present and was removed.
+         * </summary>
+         * <param name="elements">The elements to remove.</param>
+         */
+        public bool DeleteAll(string[] elements)
+        {
+            bool allDeleted = true;
+            foreach (string el in elements)
+            {
+                allDeleted = Delete(el) && allDeleted;
+            }
+            return allDeleted;
+        }
+
+        /**
+         * <summary>
          * Returns whether this set contains the specified string.
          * If passed a non-string value, returns false.
          * Returns true if the string is present.
