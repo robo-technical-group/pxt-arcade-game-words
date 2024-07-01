@@ -110,5 +110,58 @@ namespace ftss_tests
             }
             Assert.AreEqual(0, test.Size, "Test E");
         }
+
+        [TestMethod]
+        public void DeleteAllTest()
+        {
+            // Arrange
+            FastTernaryStringSet test = [];
+            string[] lines = TestFiles.short_english_list
+                .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            test.AddAll(lines);
+            int size = test.Size;
+
+            // Act & Assert
+            test.DeleteAll(null);
+            Assert.AreEqual(size, test.Size, "Test A");
+            test.DeleteAll([]);
+            Assert.AreEqual(size, test.Size, "Test B");
+            test.DeleteAll(["bear",]);
+            Assert.AreEqual(size - 1, test.Size, "Test C");
+            test.DeleteAll(["chicken", "elephant",]);
+            Assert.AreEqual(size - 3, test.Size, "Test D");
+            foreach (string w in new string[] { "bear", "chicken", "elephant", })
+            {
+                Assert.IsFalse(test.Has(w), $"Test E word {w}");
+            }
+            test.DeleteAll(["goat", "hen",]);
+            Assert.AreEqual(size - 5, test.Size, "Test F");
+        }
+
+        [TestMethod]
+        public void DeleteAllReturn()
+        {
+            // Arrange
+            FastTernaryStringSet test = [];
+            string[] lines = TestFiles.short_english_list
+                .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            test.AddAll(lines);
+
+            // Act & Assert
+            Assert.AreEqual(lines.Length, test.Size, "Test A");
+            Assert.IsTrue(test.DeleteAll(lines), "Test B");
+            Assert.AreEqual(0, test.Size, "Test C");
+            test.AddAll(["fish", "gerbil", "pigeon",]);
+            Assert.AreEqual(3, test.Size, "Test D");
+            Assert.IsFalse(test.DeleteAll(["gerbil", "mongoose", "pigeon",]), "Test E");
+            test.AddAll(["fish", "gerbil", "pigeon",]);
+            Assert.IsFalse(test.DeleteAll(["mongoose", "gerbil", "pigeon",]), "Test F");
+            test.AddAll(["fish", "gerbil", "pigeon",]);
+            Assert.IsFalse(test.DeleteAll(["gerbil", "pigeon", "mongoose",]), "Test G");
+            test.AddAll(["fish", "gerbil", "pigeon",]);
+            Assert.IsFalse(test.DeleteAll(["mongoose",]), "Test H");
+            test.AddAll(["fish", "gerbil", "pigeon",]);
+            Assert.IsTrue(test.DeleteAll(["gerbil", "pigeon",]), "Test I");
+        }
     }
 }
