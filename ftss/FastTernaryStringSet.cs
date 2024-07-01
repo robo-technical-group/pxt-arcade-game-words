@@ -1,9 +1,19 @@
 ﻿using System.Collections;
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 
 namespace ftss
 {
+    public readonly record struct TernaryTreeStats(
+        int Size,
+        int Nodes,
+        bool IsCompact,
+        int Depth,
+        int[] Breadth,
+        int MinCodePoint,
+        int MaxCodePoint,
+        int Surrogates
+    );
+
     public class FastTernaryStringSet : IEnumerable<string>
     {
         /**
@@ -82,6 +92,56 @@ namespace ftss
          * Public properties
          */
         public int Size { get { return _size; } }
+
+        public TernaryTreeStats Stats
+        {
+            get
+            {
+                int[] breadth = [];
+                int nodes = _tree.Count / 4;
+                int surrogates = 0;
+                int minCodePoint = nodes > 0 ? 0x10ffff : 0;
+                int maxCodePoint = 0;
+
+                void traverse(int n, int d)
+                {
+                    if (n >= _tree.Count)
+                    {
+                        return;
+                    }
+                    breadth[d] = breadth.Length <= d ? 1 : breadth[d] + 1;
+                    int cp = _tree[n] & CP_MASK;
+                    if (cp >= CP_MIN_SURROGATE)
+                    {
+                        surrogates++;
+                    }
+                    if (cp > maxCodePoint)
+                    {
+                        maxCodePoint = cp;
+                    }
+                    if (cp < minCodePoint)
+                    {
+                        minCodePoint = cp;
+                    }
+
+                    traverse(_tree[n + 1], d + 1);
+                    traverse(_tree[n + 2], d + 1);
+                    traverse(_tree[n + 3], d + 1);
+                }
+                traverse(0, 0);
+
+                return new(
+                    _size,
+                    nodes,
+                    _compact,
+                    breadth.Length,
+                    breadth,
+                    minCodePoint,
+                    maxCodePoint,
+                    surrogates
+                );
+            }
+        }
 
         /**
          * Public methods
