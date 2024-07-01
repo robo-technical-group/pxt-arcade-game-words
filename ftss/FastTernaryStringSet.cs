@@ -276,7 +276,37 @@ namespace ftss
 
         protected bool Delete(int node, string s, int i, char c)
         {
-            throw new NotImplementedException();
+            if (node >= _tree.Count)
+            {
+                return false;
+            }
+            int treeChar = _tree[node] & CP_MASK;
+            if (c < treeChar)
+            {
+                return Delete(_tree[node + 1], s, i, c);
+            }
+            else if (c > treeChar)
+            {
+                return Delete(_tree[node + 3], s, i, c);
+            }
+            else
+            {
+                i += c >= CP_MIN_SURROGATE ? 2 : 1;
+                if (i >= s.Length)
+                {
+                    bool had = (_tree[node] & EOS) == EOS;
+                    if (had)
+                    {
+                        _tree[node] &= CP_MASK;
+                        _size--;
+                    }
+                    return had;
+                }
+                else
+                {
+                    return Delete(_tree[node + 2], s, i, s[i]);
+                }
+            }
         }
 
         protected bool Has(int node, string s, int i, char c)

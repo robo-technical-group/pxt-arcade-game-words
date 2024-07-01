@@ -24,5 +24,19 @@ namespace ftss_tests
             Assert.AreEqual(1, test.Size, "Test C");
             Assert.IsFalse(test.Has(""), "Test D");
         }
+
+        [TestMethod]
+        public void DeleteNonMember()
+        {
+            // Arrange
+            FastTernaryStringSet test = [];
+            // Act & Assert
+            Assert.AreEqual(0, test.Size, "Test A");
+            test.Add("dog");
+            Assert.AreEqual(1, test.Size, "Test B");
+            Assert.IsFalse(test.Has("cat"), "Test C");
+            Assert.IsFalse(test.Delete("cat"), "Test D");
+            Assert.AreEqual(1, test.Size, "Test E");
+        }
     }
 }
