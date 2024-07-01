@@ -1,4 +1,6 @@
 ﻿using ftss;
+using Microsoft.VisualStudio.TestPlatform.Common.Utilities;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace ftss_tests
 {
@@ -126,6 +128,84 @@ namespace ftss_tests
             test.AddAll(words);
             // Assert
             Assert.AreEqual(test.Size, 3);
+        }
+
+        [TestMethod]
+        public void AddFromShortEnglishFile()
+        {
+            // Arrange
+            FastTernaryStringSet test = [];
+            string[] lines = TestFiles.short_english_list
+                .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            // Act
+            test.AddAll(lines);
+            // Assert
+            Assert.AreEqual(test.Size, lines.Length);
+            foreach (string line in lines)
+            {
+                Assert.IsTrue(test.Has(line));
+            }
+        }
+
+        [TestMethod]
+        public void AddAllComplexStrings()
+        {
+            // Arrange
+            FastTernaryStringSet test = [];
+            string[] words = [
+                "Mt. Doom",
+                "a dog—smelly",
+                "line 1\nline2",
+                "🙂",
+                "I have a pet 🐈",
+                "good 🍀 luck!",
+                "程序设计员在用电脑。",
+                "𝄞𝅘𝅥𝅘𝅥𝅮𝅘𝅥𝅯𝅘𝅥𝅰𝄽",
+                "The \0 NUL Zone",
+                "max code point \udbff\udfff",
+                ];
+            // Act
+            test.AddAll(words);
+            // Assert
+            Assert.IsTrue(test.Size > 0);
+            Assert.AreEqual(test.Size, words.Length);
+        }
+
+        [TestMethod]
+        public void AddAllRange()
+        {
+            // Arrange
+            FastTernaryStringSet test = [];
+            // Act & Assert
+            test.AddAll([]);
+            Assert.AreEqual(test.Size, 0, "Test A");
+            test.AddAll(["mongoose",]);
+            Assert.AreEqual(test.Size, 1, "Test B");
+            test.AddAll(["badger", "pelican",], 0, 2);
+            Assert.AreEqual(test.Size, 3, "Test C");
+            test.AddAll(["asp", "mouse", "oyster",], 1, 3);
+            Assert.AreEqual(test.Size, 5, "Test D");
+            Assert.IsFalse(test.Has("asp"), "Test E");
+            test.AddAll(["barracuda", "cricket", "panda", "tiger",], 0, 2);
+            Assert.AreEqual(test.Size, 7, "Test F");
+            Assert.IsTrue(test.Has("barracuda") && test.Has("cricket"), "Test G");
+            Assert.IsFalse(test.Has("panda") && test.Has("tiger"), "Test H");
+            test.AddAll(["bison", "caribou", "deer", "elk", "moose",], 1);
+            Assert.AreEqual(test.Size, 11, "Test I");
+            Assert.IsFalse(test.Has("bison"), "Test J");
+            Assert.IsTrue(test.Has("caribou") && test.Has("moose"), "Test K");
+        }
+
+        [TestMethod]
+        public void AddAllBadIndices()
+        {
+            // Arrange
+            FastTernaryStringSet test = [];
+            // Act & Assert
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => test.AddAll(["badger",], -1), "Test A");
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => test.AddAll(["hare",], 2), "Test B");
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => test.AddAll(["ox",], 0, -1), "Test C");
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => test.AddAll(["carp",], 0, 2), "Test D");
         }
     }
 }
