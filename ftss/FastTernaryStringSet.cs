@@ -8,7 +8,7 @@ namespace ftss
         int Nodes,
         bool IsCompact,
         int Depth,
-        int[] Breadth,
+        IEnumerable<int> Breadth,
         int MinCodePoint,
         int MaxCodePoint,
         int Surrogates
@@ -97,7 +97,7 @@ namespace ftss
         {
             get
             {
-                int[] breadth = [];
+                List<int> breadth = [];
                 int nodes = _tree.Count / 4;
                 int surrogates = 0;
                 int minCodePoint = nodes > 0 ? 0x10ffff : 0;
@@ -109,7 +109,11 @@ namespace ftss
                     {
                         return;
                     }
-                    breadth[d] = breadth.Length <= d ? 1 : breadth[d] + 1;
+                    while (d >= breadth.Count)
+                    {
+                        breadth.Add(0);
+                    }
+                    breadth[d]++;
                     int cp = _tree[n] & CP_MASK;
                     if (cp >= CP_MIN_SURROGATE)
                     {
@@ -134,7 +138,7 @@ namespace ftss
                     _size,
                     nodes,
                     _compact,
-                    breadth.Length,
+                    breadth.Count,
                     breadth,
                     minCodePoint,
                     maxCodePoint,
