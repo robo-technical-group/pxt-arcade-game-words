@@ -17,9 +17,9 @@ namespace ftss_tests
             FastTernaryStringSet test = [];
 
             // Act & Assert
-            Assert.AreEqual(test.Size, 0, "Test A");
+            Assert.AreEqual(0, test.Size, "Test A");
             test.Clear();
-            Assert.AreEqual(test.Size, 0, "Test B");
+            Assert.AreEqual(0, test.Size, "Test B");
         }
 
         [TestMethod]
@@ -30,9 +30,9 @@ namespace ftss_tests
 
             // Act & Assert
             test.AddAll(["chicken", "duck", "whale",]);
-            Assert.AreEqual(test.Size, 3, "Test A");
+            Assert.AreEqual(3, test.Size, "Test A");
             test.Clear();
-            Assert.AreEqual(test.Size, 0, "Test B");
+            Assert.AreEqual(0, test.Size, "Test B");
         }
 
         [TestMethod]
@@ -44,9 +44,9 @@ namespace ftss_tests
             test.Add(string.Empty);
 
             // Act & Assert
-            Assert.AreEqual(test.Size, 2, "Test A");
+            Assert.AreEqual(2, test.Size, "Test A");
             test.Clear();
-            Assert.AreEqual(test.Size, 0, "Test B");
+            Assert.AreEqual(0, test.Size, "Test B");
         }
     }
 }

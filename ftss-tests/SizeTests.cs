@@ -16,11 +16,11 @@ namespace ftss_tests
             // Arrange
             FastTernaryStringSet test = [];
             // Act & Assert
-            Assert.AreEqual(test.Size, 0, "Test A");
+            Assert.AreEqual(0, test.Size, "Test A");
             test.Add("peach");
-            Assert.AreEqual(test.Size, 1, "Test B");
+            Assert.AreEqual(1, test.Size, "Test B");
             test.Add("peach");
-            Assert.AreEqual(test.Size, 1, "Test C");
+            Assert.AreEqual(1, test.Size, "Test C");
         }
 
         public void SizeNotDoubleDeleted()
@@ -28,13 +28,13 @@ namespace ftss_tests
             // Arrange
             FastTernaryStringSet test = [];
             // Act & Assert
-            Assert.AreEqual(test.Size, 0, "Test A");
+            Assert.AreEqual(0, test.Size, "Test A");
             test.Add("peach");
-            Assert.AreEqual(test.Size, 1, "Test B");
+            Assert.AreEqual(1, test.Size, "Test B");
             test.Delete("peach");
-            Assert.AreEqual(test.Size, 0, "Test C");
+            Assert.AreEqual(0, test.Size, "Test C");
             test.Delete("peach");
-            Assert.AreEqual(test.Size, 0, "Test D");
+            Assert.AreEqual(0, test.Size, "Test D");
         }
     }
 }

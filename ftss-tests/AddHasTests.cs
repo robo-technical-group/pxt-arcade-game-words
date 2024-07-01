@@ -82,7 +82,7 @@ namespace ftss_tests
             {
                 Assert.IsTrue(test.Has(s), $"Test ${s} failed after all adds.");
             }
-            Assert.AreEqual(test.Size, words.Length, "Size test failed.");
+            Assert.AreEqual(words.Length, test.Size, "Size test failed.");
         }
 
         [TestMethod]
@@ -101,7 +101,7 @@ namespace ftss_tests
             {
                 FastTernaryStringSet test = [];
                 test.AddAll(t);
-                Assert.AreEqual(test.Size, t.Length, $"Size test failed for size ${t.Length}");
+                Assert.AreEqual(t.Length, test.Size, $"Size test failed for size ${t.Length}");
                 foreach (string s in t)
                 {
                     Assert.IsTrue(test.Has(s), $"Search test for ${s} with size ${t.Length} failed.");
@@ -127,7 +127,7 @@ namespace ftss_tests
             // Act
             test.AddAll(words);
             // Assert
-            Assert.AreEqual(test.Size, 3);
+            Assert.AreEqual(3, test.Size);
         }
 
         [TestMethod]
@@ -140,10 +140,10 @@ namespace ftss_tests
             // Act
             test.AddAll(lines);
             // Assert
-            Assert.AreEqual(test.Size, lines.Length);
+            Assert.AreEqual(lines.Length, test.Size, "Size mismatch.");
             foreach (string line in lines)
             {
-                Assert.IsTrue(test.Has(line));
+                Assert.IsTrue(test.Has(line), $"Word ${line} not found.");
             }
         }
 
@@ -167,8 +167,8 @@ namespace ftss_tests
             // Act
             test.AddAll(words);
             // Assert
-            Assert.IsTrue(test.Size > 0);
-            Assert.AreEqual(test.Size, words.Length);
+            Assert.IsTrue(test.Size > 0, "Size is zero?");
+            Assert.AreEqual(words.Length, test.Size, "Size mismatch.");
         }
 
         [TestMethod]
@@ -178,20 +178,20 @@ namespace ftss_tests
             FastTernaryStringSet test = [];
             // Act & Assert
             test.AddAll([]);
-            Assert.AreEqual(test.Size, 0, "Test A");
+            Assert.AreEqual(0, test.Size, "Test A");
             test.AddAll(["mongoose",]);
-            Assert.AreEqual(test.Size, 1, "Test B");
+            Assert.AreEqual(1, test.Size, "Test B");
             test.AddAll(["badger", "pelican",], 0, 2);
-            Assert.AreEqual(test.Size, 3, "Test C");
+            Assert.AreEqual(3, test.Size, "Test C");
             test.AddAll(["asp", "mouse", "oyster",], 1, 3);
-            Assert.AreEqual(test.Size, 5, "Test D");
+            Assert.AreEqual(5, test.Size, "Test D");
             Assert.IsFalse(test.Has("asp"), "Test E");
             test.AddAll(["barracuda", "cricket", "panda", "tiger",], 0, 2);
-            Assert.AreEqual(test.Size, 7, "Test F");
+            Assert.AreEqual(7, test.Size, "Test F");
             Assert.IsTrue(test.Has("barracuda") && test.Has("cricket"), "Test G");
             Assert.IsFalse(test.Has("panda") && test.Has("tiger"), "Test H");
             test.AddAll(["bison", "caribou", "deer", "elk", "moose",], 1);
-            Assert.AreEqual(test.Size, 11, "Test I");
+            Assert.AreEqual(11, test.Size, "Test I");
             Assert.IsFalse(test.Has("bison"), "Test J");
             Assert.IsTrue(test.Has("caribou") && test.Has("moose"), "Test K");
         }
