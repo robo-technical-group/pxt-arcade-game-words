@@ -151,6 +151,36 @@ namespace ftss
             _size = 0;
         }
 
+        /**
+         * <summary>
+         * Removes the specified string from this set, if it is present.
+         * If it is not present, this has no effect.
+         * Non-strings are accepted, but treated as if they are not present.
+         * Returns true if the string was in this set; false otherwise.
+         * </summary>
+         *
+         * <param name="s">The non-null string to delete.</param>
+         */
+        public bool Delete(string s)
+        {
+            if (s.Length == 0)
+            {
+                bool had = _hasEmpty;
+                if (had)
+                {
+                    _hasEmpty = false;
+                    _size--;
+                }
+                return had;
+            }
+
+            if (_compact&& Has(s))
+            {
+                Decompact();
+            }
+            return Delete(0, s, 0, s[0]);
+        }
+
         public bool Has(string s)
         {
             if (s.Length == 0)
@@ -233,6 +263,11 @@ namespace ftss
         protected void Decompact()
         {
             throw new NotImplementedException("Decompact()");
+        }
+
+        protected bool Delete(int node, string s, int i, char c)
+        {
+            throw new NotImplementedException();
         }
 
         protected bool Has(int node, string s, int i, char c)
