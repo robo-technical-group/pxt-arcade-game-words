@@ -190,6 +190,10 @@ namespace ftss
          */
         public bool DeleteAll(string[] elements)
         {
+            if (elements is null)
+            {
+                return false;
+            }
             bool allDeleted = true;
             foreach (string el in elements)
             {
