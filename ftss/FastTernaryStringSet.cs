@@ -181,6 +181,15 @@ namespace ftss
             return Delete(0, s, 0, s[0]);
         }
 
+        /**
+         * <summary>
+         * Returns whether this set contains the specified string.
+         * If passed a non-string value, returns false.
+         * Returns true if the string is present.
+         * </summary>
+         *
+         * <param name="s">The non-null string to test for.</param>
+         */
         public bool Has(string s)
         {
             if (s.Length == 0)
