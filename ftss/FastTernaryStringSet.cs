@@ -1,5 +1,7 @@
 ﻿using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
+using System.Xml.Schema;
 
 namespace ftss
 {
@@ -268,6 +270,51 @@ namespace ftss
 
         /**
          * <summary>
+         * Returns all strings in this set that can be composed from combinations of the code points
+         * in the specified string. Unlike an anagram, all of the code points need not to appear for a match
+         * to count. For example, the pattern `"coat"` can match `"cat"` even though the *o* is not used.
+         * However, characters cannot appear *more often* than they appear in the pattern string. The same
+         * pattern `"coat"` cannot match `"tot"` since it includes only a single *t*.
+         *
+         * If this set contains the empty string, it is always included in results from this
+         * method.
+         * Returns A (possibly empty) array of strings from the set that can be composed from the
+         *     pattern characters.
+         * </summary>
+         *
+         * <param name="pattern">The non-null pattern string.</param>
+         */
+        public IList<string> GetArrangementsOf(string pattern)
+        {
+            Dictionary<int, int> availChars = [];
+            for (int i = 0; i < pattern.Length; )
+            {
+                int c = pattern[i++];
+                if (c > CP_MIN_SURROGATE)
+                {
+                    i++;
+                }
+                if (availChars.ContainsKey(c))
+                {
+                    availChars[c]++;
+                }
+                else
+                {
+                    availChars.Add(c, 1);
+                }
+            }
+            List<string> matches = _hasEmpty ? [""] : [];
+            GetArrangementsOf(0, availChars, new StringBuilder(), matches);
+            return matches;
+        }
+
+        public IEnumerator<string> GetEnumerator()
+        {
+            throw new NotImplementedException("GetEnumerator()");
+        }
+
+        /**
+         * <summary>
          * Returns whether this set contains the specified string.
          * If passed a non-string value, returns false.
          * Returns true if the string is present.
@@ -282,11 +329,6 @@ namespace ftss
                 return _hasEmpty;
             }
             return Has(0, s, 0, s[0]);
-        }
-
-        public IEnumerator<string> GetEnumerator()
-        {
-            throw new NotImplementedException("GetEnumerator()");
         }
 
         /**
@@ -392,6 +434,29 @@ namespace ftss
                     return Delete(_tree[node + 2], s, i, s[i]);
                 }
             }
+        }
+
+        protected void GetArrangementsOf(int node, IDictionary<int, int> availChars, StringBuilder sb, IList<string> matches)
+        {
+            if (node >= _tree.Count)
+            {
+                return;
+            }
+            GetArrangementsOf(_tree[node + 1], availChars, sb, matches);
+            int c = _tree[node] & CP_MASK;
+            if (availChars.TryGetValue(c, out int value) && value > 0)
+            {
+                availChars[c]--;
+                sb.Append((char)c);
+                if ((_tree[node] & EOS) == EOS)
+                {
+                    matches.Add(sb.ToString());
+                }
+                GetArrangementsOf(_tree[node + 2], availChars, sb, matches);
+                sb.Remove(sb.Length - 1, 1);
+                availChars[c]++;
+            }
+            GetArrangementsOf(_tree[node + 3], availChars, sb, matches);
         }
 
         protected bool Has(int node, string s, int i, char c)
