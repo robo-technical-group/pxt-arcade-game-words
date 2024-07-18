@@ -268,6 +268,16 @@ namespace ftss
             return allDeleted;
         }
 
+        public static string FromCodePoints(IList<int> codepoints)
+        {
+            StringBuilder sb = new();
+            foreach (int i in codepoints)
+            {
+                sb.Append((char)i);
+            }
+            return sb.ToString();
+        }
+
         /**
          * <summary>
          * Returns all strings in this set that can be composed from combinations of the code points
@@ -286,6 +296,11 @@ namespace ftss
          */
         public IList<string> GetArrangementsOf(string pattern)
         {
+            if (pattern is null)
+            {
+                throw new ArgumentNullException(nameof(pattern));
+            }
+
             Dictionary<int, int> availChars = [];
             for (int i = 0; i < pattern.Length; )
             {
@@ -308,9 +323,118 @@ namespace ftss
             return matches;
         }
 
+        /**
+         * <summary>
+         * Returns an array of possible completions for the specified prefix string.
+         * That is, an array of all strings in the set that start with the prefix.
+         * If the prefix itself is in the set, it is included as the first entry.
+         * 
+         * Returns a (possibly empty) array of all strings in the set for which the
+         *     pattern is a prefix.
+         * 
+         * Throws `ArgumentNullException` if the prefix is null.
+         * </summary>
+         * <param name="prefix">The non-null pattern to find completions for.</param>
+         */
+        public IList<string> GetCompletionsOf(string prefix)
+        {
+            if (prefix is null)
+            {
+                throw new ArgumentNullException(nameof(prefix));
+            }
+            if (prefix.Length == 0)
+            {
+                return ToList();
+            }
+
+            IList<string> results = [];
+            IList<int> pat = FastTernaryStringSet.ToCodePoints(prefix);
+            int node = HasCodePoints(0, pat, 0);
+            if (node < 0)
+            {
+                node = -node - 1;
+                // Prefix is not in tree; no children are, either.
+                if (node >= _tree.Count)
+                {
+                    return results;
+                }
+            }
+            else
+            {
+                // Prefix is in tree and also in set.
+                results.Add(prefix);
+            }
+
+            // Continue from end of prefix by taking equal branch.
+            VisitCodePoints(_tree[node + 2], pat, (IList<int> s, int i) =>
+            {
+                results.Add(FastTernaryStringSet.FromCodePoints(s));
+            });
+            return results;
+        }
+
         public IEnumerator<string> GetEnumerator()
         {
-            throw new NotImplementedException("GetEnumerator()");
+            if (_hasEmpty)
+            {
+                yield return string.Empty;
+            }
+            GetEnumerator(0, []);
+            throw new NotImplementedException();
+        }
+
+        protected IEnumerator<string> GetEnumerator(int node, IList<int> prefix)
+        {
+            if (node < _tree.Count)
+            {
+                GetEnumerator(_tree[node + 1], prefix);
+                prefix.Add(_tree[node] & CP_MASK);
+                if ((_tree[node] & EOS) == EOS)
+                {
+                    yield return FastTernaryStringSet.FromCodePoints(prefix);
+                }
+                GetEnumerator(_tree[node + 2], prefix);
+                prefix.RemoveAt(prefix.Count - 1);
+                GetEnumerator(_tree[node + 3], prefix);
+            }
+        }
+
+        /**
+         * <summary>
+         * Returns a new array of every element in the set. This is equivalent
+         * to `Array.from(this)`, but this method is more efficient.
+         * 
+         * Returns A non-null array of the elements of the set in lexicographic order.
+         * </summary>
+         */
+        public string[] ToArray()
+        {
+            return [.. ToList()];
+        }
+
+        public IList<string> ToList()
+        {
+            IList<string> a = _hasEmpty ? [string.Empty] : [];
+            VisitCodePoints(0, [], (IList<int> s, int i) =>
+            {
+                a.Add(FastTernaryStringSet.FromCodePoints(s));
+            });
+            return a;
+        }
+
+        public static IList<int> ToCodePoints(string s)
+        {
+            IList<int> codepoints = [];
+            for (int i = 0; i < s.Length; )
+            {
+                char c = s[i++];
+                if (c >= CP_MIN_SURROGATE)
+                {
+                    ++i;
+                }
+                codepoints.Add(c);
+            }
+            return codepoints;
         }
 
         /**
@@ -489,9 +613,52 @@ namespace ftss
             }
         }
 
+        protected int HasCodePoints(int node, IList<int> s, int i)
+        {
+            if (node >= _tree.Count)
+            {
+                return -node - 1;
+            }
+            int codepoint = s[i];
+            int treeCodepoint = _tree[node] & CP_MASK;
+            if (codepoint < treeCodepoint)
+            {
+                return HasCodePoints(_tree[node + 1], s, i);
+            }
+            else if (codepoint > treeCodepoint)
+            {
+                return HasCodePoints(_tree[node + 3], s, i);
+            }
+            else
+            {
+                if (++i >= s.Count)
+                {
+                    return (_tree[node] & EOS) == EOS ? node : -node - 1;
+                }
+                else
+                {
+                    return HasCodePoints(_tree[node + 2], s, i);
+                }
+            }
+        }
+
+        protected void VisitCodePoints(int node, IList<int> prefix, Action<IList<int>, int> visitFn)
+        {
+            if (node >= _tree.Count) { return; }
+            VisitCodePoints(_tree[node + 1], prefix, visitFn);
+            prefix.Add(_tree[node] & CP_MASK);
+            if ((_tree[node] & EOS) == EOS)
+            {
+                visitFn(prefix, node);
+            }
+            VisitCodePoints(_tree[node + 2], prefix, visitFn);
+            prefix.RemoveAt(prefix.Count - 1);
+            VisitCodePoints(_tree[node + 3], prefix, visitFn);
+        }
+
         IEnumerator IEnumerable.GetEnumerator()
         {
-            throw new NotImplementedException("IEnumerable.GetEnumerator()");
+            return GetEnumerator();
         }
     }
 }
