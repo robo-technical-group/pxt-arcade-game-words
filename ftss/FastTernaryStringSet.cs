@@ -296,11 +296,7 @@ namespace ftss
          */
         public IList<string> GetArrangementsOf(string pattern)
         {
-            if (pattern is null)
-            {
-                throw new ArgumentNullException(nameof(pattern));
-            }
-
+            ArgumentNullException.ThrowIfNull(pattern);
             Dictionary<int, int> availChars = [];
             for (int i = 0; i < pattern.Length; )
             {
@@ -325,6 +321,46 @@ namespace ftss
 
         /**
          * <summary>
+         * Returns an array of the strings that are completed by the specified suffix string.
+         * That is, an array of all strings in the set that end with the suffix,
+         * including the suffix itself if appropriate.
+         * 
+         * Returns a (possibly empty) array of all strings in the set for which the
+         *     pattern is a suffix.
+         *     
+         * Throws `ArgumentNullException` if the suffix is null.
+         * </summary>
+         * <param name="suffix">The non-null pattern to find completions for.</param>
+         */
+        public IList<string> GetCompletedBy(string suffix)
+        {
+            ArgumentNullException.ThrowIfNull(suffix);
+            if (suffix.Length == 0)
+            {
+                return ToList();
+            }
+            IList<string> results = [];
+            IList<int> pat = FastTernaryStringSet.ToCodePoints(suffix);
+
+            VisitCodePoints(0, [], (IList<int> s, int q) =>
+            {
+                if (s.Count >= pat.Count)
+                {
+                    for (int i = 1; i <= pat.Count; i++)
+                    {
+                        if (s[s.Count - i] != pat[pat.Count - i])
+                        {
+                            return;
+                        }
+                    }
+                    results.Add(FastTernaryStringSet.FromCodePoints(s));
+                }
+            });
+            return results;
+        }
+
+        /**
+         * <summary>
          * Returns an array of possible completions for the specified prefix string.
          * That is, an array of all strings in the set that start with the prefix.
          * If the prefix itself is in the set, it is included as the first entry.
@@ -338,10 +374,7 @@ namespace ftss
          */
         public IList<string> GetCompletionsOf(string prefix)
         {
-            if (prefix is null)
-            {
-                throw new ArgumentNullException(nameof(prefix));
-            }
+            ArgumentNullException.ThrowIfNull(prefix);
             if (prefix.Length == 0)
             {
                 return ToList();
@@ -381,22 +414,6 @@ namespace ftss
             }
             GetEnumerator(0, []);
             throw new NotImplementedException();
-        }
-
-        protected IEnumerator<string> GetEnumerator(int node, IList<int> prefix)
-        {
-            if (node < _tree.Count)
-            {
-                GetEnumerator(_tree[node + 1], prefix);
-                prefix.Add(_tree[node] & CP_MASK);
-                if ((_tree[node] & EOS) == EOS)
-                {
-                    yield return FastTernaryStringSet.FromCodePoints(prefix);
-                }
-                GetEnumerator(_tree[node + 2], prefix);
-                prefix.RemoveAt(prefix.Count - 1);
-                GetEnumerator(_tree[node + 3], prefix);
-            }
         }
 
         /**
@@ -581,6 +598,22 @@ namespace ftss
                 availChars[c]++;
             }
             GetArrangementsOf(_tree[node + 3], availChars, sb, matches);
+        }
+
+        protected IEnumerator<string> GetEnumerator(int node, IList<int> prefix)
+        {
+            if (node < _tree.Count)
+            {
+                GetEnumerator(_tree[node + 1], prefix);
+                prefix.Add(_tree[node] & CP_MASK);
+                if ((_tree[node] & EOS) == EOS)
+                {
+                    yield return FastTernaryStringSet.FromCodePoints(prefix);
+                }
+                GetEnumerator(_tree[node + 2], prefix);
+                prefix.RemoveAt(prefix.Count - 1);
+                GetEnumerator(_tree[node + 3], prefix);
+            }
         }
 
         protected bool Has(int node, string s, int i, char c)

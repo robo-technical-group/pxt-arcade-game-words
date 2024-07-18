@@ -169,5 +169,42 @@ namespace ftss_tests
                     "shelf",
             }, (List<string>)test.GetCompletionsOf("she"));
         }
+
+        [TestMethod]
+        public void GetCompletedNull()
+        {
+            // Arrange
+            FastTernaryStringSet test = [];
+            // Act & Assert
+            Assert.ThrowsException<ArgumentNullException>(() => test.GetCompletedBy(null));
+        }
+
+        [TestMethod]
+        public void GetCompletedBasic()
+        {
+            // Arrange
+            FastTernaryStringSet test = [];
+            IList<string> elements = [
+                    "",
+                    "aardvark",
+                    "bumping",
+                    "jumping",
+                    "lamb",
+                    "lifting",
+                    "muskrat",
+                    "trying",
+                    "turtles",
+                ];
+            test.AddAll(elements);
+            // Act & Assert
+            CollectionAssert.AreEquivalent((List<string>)elements, (List<string>)test.GetCompletedBy(string.Empty), "Test A");
+            CollectionAssert.AreEquivalent(new string[]
+            {
+                "bumping",
+                "jumping",
+                "lifting",
+                "trying",
+            }, (List<string>)test.GetCompletedBy("ing"), "Test B");
+        }
     }
 }
