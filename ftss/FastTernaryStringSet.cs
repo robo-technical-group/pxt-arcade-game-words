@@ -418,6 +418,40 @@ namespace ftss
 
         /**
          * <summary>
+         * Returns all strings that match the pattern. The pattern may include zero or
+         * more "don't care" characters that can match any code point. By default this
+         * character is `"."`, but any valid code point can be used. For example, the
+         * pattern `"c.t"` would match any of `"cat"`, `"cot"`, or `"cut"`, but not `"cup"`.
+         * Returns A (possibly empty) array of strings that match the pattern string.
+         * Throws `ArgumentNullException` if the pattern or don't care string is null.
+         * Throws `ArgumentNullException` if the don't care string is empty.
+         * </summary>
+         * <param name="pattern">A pattern string matched against the strings in the set.</param>
+         * <param name="dontCareChar">
+         * The character that can stand in for any character in the pattern.
+         *     Only the first code point is used. (Default is `"."`.)
+         * </param>
+         */
+        public IList<string> GetPartialMatchesOf(string pattern, string dontCareChar = ".")
+        {
+            ArgumentNullException.ThrowIfNull(pattern);
+            if (string.IsNullOrEmpty(dontCareChar))
+            {
+                throw new ArgumentNullException(nameof(dontCareChar));
+            }
+
+            if (pattern.Length == 0)
+            {
+                return _hasEmpty ? [""] : [];
+            }
+
+            IList<string> matches = [];
+            GetPartialMatches(0, pattern, 0, dontCareChar[0], [], matches);
+            return matches;
+        }
+
+        /**
+         * <summary>
          * Returns a new array of every element in the set. This is equivalent
          * to `Array.from(this)`, but this method is more efficient.
          * 
@@ -613,6 +647,40 @@ namespace ftss
                 GetEnumerator(_tree[node + 2], prefix);
                 prefix.RemoveAt(prefix.Count - 1);
                 GetEnumerator(_tree[node + 3], prefix);
+            }
+        }
+
+        protected void GetPartialMatches(
+            int node, string pattern, int i, char dc, IList<int> prefix, IList<string> matches)
+        {
+            if (node >= _tree.Count) { return; }
+
+            char cp = pattern[i];
+            int treeCp = _tree[node] & CP_MASK;
+            if (cp < treeCp || cp == dc)
+            {
+                GetPartialMatches(_tree[node + 1], pattern, i, dc, prefix, matches);
+            }
+            if (cp == treeCp || cp == dc)
+            {
+                int i_ = i + (cp >= CP_MIN_SURROGATE ? 2 : 1);
+                prefix.Add(treeCp);
+                if (i_ >= pattern.Length)
+                {
+                    if ((_tree[node] & EOS) == EOS)
+                    {
+                        matches.Add(FromCodePoints(prefix));
+                    }
+                }
+                else
+                {
+                    GetPartialMatches(_tree[node + 2], pattern, i_, dc, prefix, matches);
+                }
+                prefix.RemoveAt(prefix.Count - 1);
+            }
+            if (cp > treeCp || cp == dc)
+            {
+                GetPartialMatches(_tree[node + 3], pattern, i, dc, prefix, matches);
             }
         }
 

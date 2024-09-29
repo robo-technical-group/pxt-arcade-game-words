@@ -135,7 +135,7 @@ namespace ftss_tests
             CollectionAssert.AreEquivalent(Array.Empty<string>(), (List<string>)test.GetCompletionsOf("babz"), "Test M");
         }
 
-        private static IList<string> GetCompletions(string prefix, IList<string> elements)
+        protected static IList<string> GetCompletions(string prefix, IList<string> elements)
         {
             IList<string> results = [];
             foreach (string element in elements)
@@ -205,6 +205,177 @@ namespace ftss_tests
                 "lifting",
                 "trying",
             }, (List<string>)test.GetCompletedBy("ing"), "Test B");
+        }
+
+        protected static IList<string> GetCompletedBy(string prefix, IList<string> elements)
+        {
+            List<string> results = [];
+            foreach (string s in elements)
+            {
+                if (s.EndsWith(prefix))
+                {
+                    results.Add(s);
+                }
+            }
+            return results;
+        }
+
+        [TestMethod]
+        public void GetCompletedAgainstWordList()
+        {
+            // Arrange
+            FastTernaryStringSet test = [];
+            string[] lines = TestFiles.short_english_list
+                .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            test.AddAll(lines);
+
+            // Act & Assert
+            CollectionAssert.AreEquivalent((List<string>)GetCompletedBy("s", lines), (List<string>)test.GetCompletedBy("s"));
+            CollectionAssert.AreEquivalent((List<string>)GetCompletedBy("ing", lines), (List<string>)test.GetCompletedBy("ing"));
+            Assert.AreEqual(0, test.GetCompletedBy("zzz").Count);
+        }
+
+        [TestMethod]
+        public void GetPartialsNull()
+        {
+            // Arrange
+            FastTernaryStringSet test = [];
+            // Act & Assert
+            Assert.ThrowsException<ArgumentNullException>(() => test.GetPartialMatchesOf(null));
+        }
+
+        [TestMethod]
+        public void GetPartialsBasic()
+        {
+            // Arrange
+            FastTernaryStringSet test = [];
+            IList<string> elements = ["a", "aa", "aaa", "aab", "aaaa", "aaaaa", "aaaab", "aaaac", ];
+            test.AddAll(elements);
+
+            // Act & Assert
+            CollectionAssert.AreEquivalent(new string[] { "a" }, (List<string>)test.GetPartialMatchesOf("?", "?"), "Test A");
+            Assert.AreEqual(0, test.GetPartialMatchesOf("").Count, "Test B");
+            CollectionAssert.AreEquivalent(new string[] { "aa", }, (List<string>)test.GetPartialMatchesOf("a."), "Test C");
+            string[] aa = ["aaa", "aab",];
+            string[] aaa = ["aaa",];
+            string[] aab = ["aab",];
+            CollectionAssert.AreEquivalent(aa, (List<string>)test.GetPartialMatchesOf("a.."), "Test D");
+            CollectionAssert.AreEquivalent(aa, (List<string>)test.GetPartialMatchesOf("aa."), "Test E");
+            CollectionAssert.AreEquivalent(aa, (List<string>)test.GetPartialMatchesOf("..."), "Test F");
+            CollectionAssert.AreEquivalent(aaa, (List<string>)test.GetPartialMatchesOf(".aa"), "Test G");
+            CollectionAssert.AreEquivalent(aab, (List<string>)test.GetPartialMatchesOf(".ab"), "Test H");
+            CollectionAssert.AreEquivalent(aaa, (List<string>)test.GetPartialMatchesOf("..a"), "Test I");
+            CollectionAssert.AreEquivalent(aab, (List<string>)test.GetPartialMatchesOf("..b"), "Test J");
+            CollectionAssert.AreEquivalent(aa, (List<string>)test.GetPartialMatchesOf(".a."), "Test K");
+            string[] a5 = ["aaaaa", "aaaab", "aaaac",];
+            CollectionAssert.AreEquivalent(a5, (List<string>)test.GetPartialMatchesOf("....."), "Test L");
+            CollectionAssert.AreEquivalent(a5, (List<string>)test.GetPartialMatchesOf("aaaa."), "Test M");
+
+            // Strings with no "don't care" can only match their exact strings.
+            int count = 0;
+            foreach (string el in elements)
+            {
+                CollectionAssert.AreEquivalent(new string[] { el, }, (List<string>)test.GetPartialMatchesOf(el), "Test N Pass " + count);
+                count++;
+            }
+            Assert.AreEqual(0, test.GetPartialMatchesOf("Z").Count, "Test O");
+        }
+
+        [TestMethod]
+        public void GetPartialsWordList()
+        {
+            // Arrange
+            FastTernaryStringSet test = [];
+            string[] lines = TestFiles.short_english_list
+                .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            test.AddAll(lines);
+
+            // Act & Assert
+            CollectionAssert.AreEquivalent(new string[] { "I", "a", }, (List<string>)test.GetPartialMatchesOf("."), "Test A");
+            CollectionAssert.AreEquivalent(new string[] { "bean", "mean", }, (List<string>)test.GetPartialMatchesOf(".e.n"), "Test B");
+            CollectionAssert.AreEquivalent(new string[]
+            {
+                "chocolate",
+                "expensive",
+                "furniture",
+                "introduce",
+                "structure",
+                "substance",
+                "telephone",
+                "therefore",
+                "vegetable",
+                "xylophone",
+            }, (List<string>)test.GetPartialMatchesOf("........e"), "Test C");
+            CollectionAssert.AreEquivalent(new string[] { "join", "jump", "just", }, (List<string>)test.GetPartialMatchesOf("j..."), "Test D");
+            CollectionAssert.AreEquivalent(new string[] { "juice", "quite", }, (List<string>)test.GetPartialMatchesOf(".u..e"), "Test E");
+            CollectionAssert.AreEquivalent(new string[] { "public", }, (List<string>)test.GetPartialMatchesOf("public"), "Test F");
+            CollectionAssert.AreEquivalent(new string[]
+            {
+                "bad",
+                "bag",
+                "can",
+                "cap",
+                "car",
+                "cat",
+                "day",
+                "ear",
+                "eat",
+                "far",
+                "hat",
+                "man",
+                "map",
+                "may",
+                "pan",
+                "pay",
+                "sad",
+                "say",
+                "was",
+                "way",
+            }, (List<string>)test.GetPartialMatchesOf(".a."), "Test G");
+            CollectionAssert.AreEquivalent(new string[]
+            {
+                "comfortable",
+                "examination",
+                "grandfather",
+                "grandmother",
+            }, (List<string>)test.GetPartialMatchesOf("..........."), "Test H");
+        }
+
+        [TestMethod]
+        public void GetPartialsEmptyString()
+        {
+            // Arrange
+            FastTernaryStringSet test = ["", "a", "b",];
+            // Act & Assert
+            CollectionAssert.AreEquivalent(new string[] { "", }, (List<string>)test.GetPartialMatchesOf(""));
+            CollectionAssert.AreEquivalent(new string[] { "a", "b", }, (List<string>)test.GetPartialMatchesOf("."));
+            CollectionAssert.AreEquivalent(new string[] { "a", }, (List<string>)test.GetPartialMatchesOf("a"));
+            CollectionAssert.AreEquivalent(new string[] { "b", }, (List<string>)test.GetPartialMatchesOf("b"));
+        }
+
+        [TestMethod]
+        public void GetPartialsAltChar()
+        {
+            // Arrange
+            FastTernaryStringSet test = ["c.t", "cat", "cot", "cup", "cut", ];
+            // Act & Assert
+            CollectionAssert.AreEquivalent(new string[]
+            {
+                "c.t",
+                "cat",
+                "cot",
+                "cut",
+            }, (List<string>)test.GetPartialMatchesOf("c?t", "?"));
+            CollectionAssert.AreEquivalent(new string[]
+            {
+                "c.t",
+                "cat",
+                "cot",
+                "cup",
+                "cut",
+            }, (List<string>)test.GetPartialMatchesOf("c??", "?"));
+            CollectionAssert.AreEquivalent(new string[] { "cup", }, (List<string>)test.GetPartialMatchesOf("##p", "#"));
+            CollectionAssert.AreEquivalent(new string[] { "c.t", }, (List<string>)test.GetPartialMatchesOf("#.t", "#"));
         }
     }
 }
