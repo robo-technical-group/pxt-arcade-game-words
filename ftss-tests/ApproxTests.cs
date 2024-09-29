@@ -1,4 +1,5 @@
 ﻿using ftss;
+using System.Text.RegularExpressions;
 
 namespace ftss_tests
 {
@@ -347,10 +348,10 @@ namespace ftss_tests
             // Arrange
             FastTernaryStringSet test = ["", "a", "b",];
             // Act & Assert
-            CollectionAssert.AreEquivalent(new string[] { "", }, (List<string>)test.GetPartialMatchesOf(""));
-            CollectionAssert.AreEquivalent(new string[] { "a", "b", }, (List<string>)test.GetPartialMatchesOf("."));
-            CollectionAssert.AreEquivalent(new string[] { "a", }, (List<string>)test.GetPartialMatchesOf("a"));
-            CollectionAssert.AreEquivalent(new string[] { "b", }, (List<string>)test.GetPartialMatchesOf("b"));
+            CollectionAssert.AreEquivalent(new string[] { "", }, (List<string>)test.GetPartialMatchesOf(""), "Test A");
+            CollectionAssert.AreEquivalent(new string[] { "a", "b", }, (List<string>)test.GetPartialMatchesOf("."), "Test B");
+            CollectionAssert.AreEquivalent(new string[] { "a", }, (List<string>)test.GetPartialMatchesOf("a"), "Test C");
+            CollectionAssert.AreEquivalent(new string[] { "b", }, (List<string>)test.GetPartialMatchesOf("b"), "Test D");
         }
 
         [TestMethod]
@@ -365,7 +366,7 @@ namespace ftss_tests
                 "cat",
                 "cot",
                 "cut",
-            }, (List<string>)test.GetPartialMatchesOf("c?t", "?"));
+            }, (List<string>)test.GetPartialMatchesOf("c?t", "?"), "Test A");
             CollectionAssert.AreEquivalent(new string[]
             {
                 "c.t",
@@ -373,9 +374,100 @@ namespace ftss_tests
                 "cot",
                 "cup",
                 "cut",
-            }, (List<string>)test.GetPartialMatchesOf("c??", "?"));
-            CollectionAssert.AreEquivalent(new string[] { "cup", }, (List<string>)test.GetPartialMatchesOf("##p", "#"));
-            CollectionAssert.AreEquivalent(new string[] { "c.t", }, (List<string>)test.GetPartialMatchesOf("#.t", "#"));
+            }, (List<string>)test.GetPartialMatchesOf("c??", "?"), "Test B");
+            CollectionAssert.AreEquivalent(new string[] { "cup", }, (List<string>)test.GetPartialMatchesOf("##p", "#"), "Test C");
+            CollectionAssert.AreEquivalent(new string[] { "c.t", }, (List<string>)test.GetPartialMatchesOf("#.t", "#"), "Test D");
+        }
+
+        [TestMethod]
+        public void GetHammingBadArg()
+        {
+            // Arrange
+            FastTernaryStringSet test = [];
+            // Act & Assert
+            Assert.ThrowsException<ArgumentNullException>(() => test.GetWithinHammingDistanceOf(null, 0), "Test A");
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => test.GetWithinHammingDistanceOf("", -1), "Test B");
+        }
+
+        [TestMethod]
+        public void GetHammingZero()
+        {
+            // Arrange
+            FastTernaryStringSet test = ["a", "aa", "aaa", "aaaa", "aac", "abc", "xyz",];
+            // Act & Assert
+            CollectionAssert.AreEquivalent(new string[] { "abc", }, (List<string>)test.GetWithinHammingDistanceOf("abc", 0), "Test A");
+            Assert.AreEqual(0, test.GetWithinHammingDistanceOf("abz", 0).Count, "Test B");
+            Assert.AreEqual(0, test.GetWithinHammingDistanceOf("azz", 0).Count, "Test C");
+            Assert.AreEqual(0, test.GetWithinHammingDistanceOf("zzz", 0).Count, "Test D");
+        }
+
+        [TestMethod]
+        public void GetHammingMax()
+        {
+            // Distance >= n matches all strings with pattern's length.
+            // Arrange
+            FastTernaryStringSet test = ["a", "aa", "aaa", "aaaa", "aac", "abc", "xyz",];
+            string[] matches = [
+                "aaa",
+                "aac",
+                "abc",
+                "xyz",
+            ];
+            // Act & Assert
+            CollectionAssert.AreEquivalent(matches, (List<string>)test.GetWithinHammingDistanceOf("abc", 3), "Test A");
+            CollectionAssert.AreEquivalent(matches, (List<string>)test.GetWithinHammingDistanceOf("abc", 4), "Test B");
+            CollectionAssert.AreEquivalent(matches, (List<string>)test.GetWithinHammingDistanceOf("abc", int.MaxValue), "Test B");
+        }
+
+        [TestMethod]
+        public void GetHammingDistance()
+        {
+            // Distance 1..n-1 matches string <= distance.
+            // Arrange
+            FastTernaryStringSet test = ["a", "aa", "aaa", "aaaa", "aac", "abc", "xyz",];
+            // Act & Assert
+            CollectionAssert.AreEquivalent(new string[] { "aac", "abc", }, (List<string>)test.GetWithinHammingDistanceOf("abc", 1), "Test A");
+            CollectionAssert.AreEquivalent(new string[] { "aaa", "aac", "abc", }, (List<string>)test.GetWithinHammingDistanceOf("abc", 2), "Test B");
+        }
+
+        [TestMethod]
+        public void GetHammingCats()
+        {
+            // Arrange
+            FastTernaryStringSet test = [];
+            string[] lines = TestFiles.short_english_list
+                .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            test.AddAll(lines);
+            IList<string> match1 = lines.Where(s => Regex.IsMatch(s, @"^.at$") ||
+                    Regex.IsMatch(s, @"^c.t$") ||
+                    Regex.IsMatch(s, @"^ca.$")).ToList();
+            IList<string> match2 = lines.Where(s => Regex.IsMatch(s, @"^..t$") ||
+                    Regex.IsMatch(s, @"^c..$") ||
+                    Regex.IsMatch(s, @"^.a.$")).ToList();
+            IList<string> match3 = lines.Where(s => s.Length == 3).ToList();
+
+
+            // Act & Assert
+            CollectionAssert.AreEquivalent(new string[] { "cat", }, (List<string>)test.GetWithinHammingDistanceOf("cat", 0), "Test A");
+            CollectionAssert.AreEquivalent((List<string>)match1,
+                (List<string>)test.GetWithinHammingDistanceOf("cat", 1), "Test B");
+            CollectionAssert.AreEquivalent((List<string>)match2,
+                (List<string>)test.GetWithinHammingDistanceOf("cat", 2), "Test C");
+            CollectionAssert.AreEquivalent((List<string>)match3,
+                (List<string>)test.GetWithinHammingDistanceOf("cat", 3), "Test D");
+        }
+
+        [TestMethod]
+        public void GetHammingEmptyString()
+        {
+            // Arrange
+            FastTernaryStringSet test = ["", "a", "b",];
+            string[] empty = ["",];
+            // Act & Assert
+            CollectionAssert.AreEquivalent(empty, (List<string>)test.GetWithinHammingDistanceOf("", 0), "Test A");
+            CollectionAssert.AreEquivalent(empty, (List<string>)test.GetWithinHammingDistanceOf("", 1), "Test B");
+            test.Delete("");
+            Assert.AreEqual(0, test.GetWithinHammingDistanceOf("", 0).Count, "Test C");
         }
     }
 }

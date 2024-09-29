@@ -452,6 +452,54 @@ namespace ftss
 
         /**
          * <summary>
+         * Returns an array of all strings in the set that are within the specified Hamming distance
+         * of the given pattern string. A string is within Hamming distance *n* of the pattern if at
+         * most *n* of its code points are different from those of the pattern. For example:
+         *  - `cat` is Hamming distance 0 from itself;
+         *  - `cot` is Hamming distance 1 from `cat`;
+         *  - `cop` is Hamming distance 2 from `cat`; and
+         *  - `top` is Hamming distance 3 from `cat`.
+         * Returns A (possibly empty) array of strings from the set that match the pattern.
+         * Throws `ArgumentNullException` if the pattern is null.
+         * Throws `ArgumentOutOfRangeException` if the distance is negative.
+         * </summary>
+         * <param name="pattern">A pattern string matched against the strings in the set.</param>
+         * <param name="distance">
+         * The maximum number of code point deviations to allow from the pattern string.
+         *     May be Infinity to allow any number.
+         * </param>
+         */
+        public IList<string> GetWithinHammingDistanceOf(string pattern, int distance)
+        {
+            ArgumentNullException.ThrowIfNull(pattern);
+            ArgumentOutOfRangeException.ThrowIfNegative(distance);
+
+            if (distance < 1 || pattern.Length == 0)
+            {
+                return Has(pattern) ? [pattern] : [];
+            }
+
+            IList<string> matches = [];
+
+            // Optimize case where any string the same length as the pattern will match.
+            if (distance >= pattern.Length)
+            {
+                VisitCodePoints(0, [], (prefix, i) =>
+                {
+                    if (prefix.Count == pattern.Length)
+                    {
+                        matches.Add(FromCodePoints(prefix));
+                    }
+                });
+                return matches;
+            }
+
+            GetWithinHammingDistance(0, pattern, 0, distance, [], matches);
+            return matches;
+        }
+
+        /**
+         * <summary>
          * Returns a new array of every element in the set. This is equivalent
          * to `Array.from(this)`, but this method is more efficient.
          * 
@@ -681,6 +729,39 @@ namespace ftss
             if (cp > treeCp || cp == dc)
             {
                 GetPartialMatches(_tree[node + 3], pattern, i, dc, prefix, matches);
+            }
+        }
+
+        protected void GetWithinHammingDistance(int node, string pat, int i, int dist, IList<int> prefix, IList<string> o)
+        {
+            if (node >= _tree.Count || dist < 0) { return; }
+            char cp = pat[i];
+            int treeCp = _tree[node] & CP_MASK;
+            if (cp < treeCp || dist > 0)
+            {
+                GetWithinHammingDistance(_tree[node + 1], pat, i, dist, prefix, o);
+            }
+
+            prefix.Add(treeCp);
+            if ((_tree[node] & EOS) == EOS && pat.Length == prefix.Count)
+            {
+                if (dist > 0 || cp == treeCp)
+                {
+                    o.Add(FromCodePoints(prefix));
+                }
+                // No need to recurse; children of this equals branch are too long.
+            }
+            else
+            {
+                int i_ = i + (cp >= CP_MIN_SURROGATE ? 2 : 1);
+                int dist_ = dist - (cp == treeCp ? 0 : 1);
+                GetWithinHammingDistance(_tree[node + 2], pat, i_, dist_, prefix, o);
+            }
+            prefix.RemoveAt(prefix.Count - 1);
+
+            if (cp > treeCp || dist > 0)
+            {
+                GetWithinHammingDistance(_tree[node + 3], pat, i, dist, prefix, o);
             }
         }
 
