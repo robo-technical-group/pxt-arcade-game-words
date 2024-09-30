@@ -452,6 +452,104 @@ namespace ftss
 
         /**
          * <summary>
+         * Returns an array of all strings in the set that are within the specified edit distance
+         * of the given pattern string. A string is within edit distance *n* of the pattern if
+         * it can be transformed into the pattern with no more than *n* insertions, deletions,
+         * or substitutions. For example:
+         *  - `cat` is edit distance 0 from itself;
+         *  - `at` is edit distance 1 from `cat` (1 deletion);
+         *  - `cot` is edit distance 1 from `cat` (1 substitution); and
+         *  - `coats` is edit distance 2 from `cat` (2 insertions).
+         * Returns A (possibly empty) array of strings from the set that match the pattern.
+         * Throws `ArgumentNullException` if the pattern is null.
+         * Throws `ArgumentOutOfRangeException` if the distance is negative.
+         * </summary>
+         * <param name="pattern">A pattern string matched against the strings in the set.</param>
+         * <param name="distance">
+         * The maximum number of edits to apply to the pattern string.
+         *   May be Infinity to allow any number of edits.
+         * </param>
+         */
+        public IList<string> GetWithinEditDistanceOf(string pattern, int distance)
+        {
+            ArgumentNullException.ThrowIfNull(pattern);
+            ArgumentOutOfRangeException.ThrowIfNegative(distance);
+            if (distance < 1)
+            {
+                return Has(pattern) ? [pattern] : [];
+            }
+
+            /**
+             * Once we start inserting and deleting characters,
+             * a standard traversal no longer guarantees
+             * sorted order. So, instead of collecting results
+             * in a list, we collect them in a temporary set.
+             */
+            FastTernaryStringSet results = [];
+
+            // Add empty string if we can delete the pattern down to it.
+            if (_hasEmpty && pattern.Length <= distance)
+            {
+                results.Add("");
+            }
+
+            /**
+             * We avoid redundant work by computing possible deletions
+             * ahead of time. (For example, aaa deletes to aa 3 different ways.)
+             */
+            FastTernaryStringSet patterns = new([pattern,]);
+            for (int d = distance; d >= 0; d--)
+            {
+                FastTernaryStringSet reducedPatterns = [];
+                if (patterns._hasEmpty)
+                {
+                    GetWithinEditDistance(0, [], 0, d, [], results);
+                }
+
+                /**
+                 * Make patterns for the next iteration by
+                 * deleting each character in turn
+                 * from this iteration's patterns.
+                 * abc => ab ac bc => a b c => empty string
+                 */
+                patterns.VisitCodePoints(0, [], (cp, q) =>
+                {
+                    GetWithinEditDistance(0, cp, 0, d, [], results);
+                    if (d > 0 && cp.Count > 0)
+                    {
+                        if (cp.Count == 1)
+                        {
+                            reducedPatterns._hasEmpty = true;
+                        }
+                        else
+                        {
+                            int[] delete1 = new int[cp.Count - 1];
+                            for (int i = 0; i < cp.Count; i++)
+                            {
+                                for (int j = 0; j < i; j++)
+                                {
+                                    delete1[j] = cp[j];
+                                }
+                                for (int j = i + 1; j < cp.Count; j++)
+                                {
+                                    delete1[j - 1] = cp[j];
+                                }
+                                reducedPatterns.AddCodePoints(0, delete1, 0);
+                            }
+                        }
+                    }
+                });
+                if (patterns._hasEmpty)
+                {
+                    GetWithinEditDistance(0, [], 0, d, [], results);
+                }
+                patterns = reducedPatterns;
+            }
+            return results.ToList();
+        }
+
+        /**
+         * <summary>
          * Returns an array of all strings in the set that are within the specified Hamming distance
          * of the given pattern string. A string is within Hamming distance *n* of the pattern if at
          * most *n* of its code points are different from those of the pattern. For example:
@@ -619,6 +717,58 @@ namespace ftss
             AddAllInternal(source, mid + 1, end + 1);
         }
 
+        /**
+         * <summary>
+         * Adds a string described as an array of numeric code points.
+         * Does not handle adding empty strings.
+         * Does not check if the tree needs to be decompacted.
+         * </summary>
+         * <param name="node">The subtree from which to begin adding (0 for root).</param>
+         * <param name="s">The non-null array of code points to add.</param>
+         * <param name="i">The array index of the code point to start from (0 to add entire string).</param>
+         */
+        protected int AddCodePoints(int node, IList<int> s, int i)
+        {
+            int cp = s[i];
+            if (node >= _tree.Count)
+            {
+                node = _tree.Count;
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(node, NODE_CEILING);
+            }
+            _tree.Add(cp);
+            _tree.Add(NUL);
+            _tree.Add(NUL);
+            _tree.Add(NUL);
+
+            int treeCp = _tree[node] & CP_MASK;
+            if (cp < treeCp)
+            {
+                _tree[node + 1] = AddCodePoints(_tree[node + 1], s, i);
+            }
+            else if (cp > treeCp)
+            {
+                _tree[node + 3] = AddCodePoints(_tree[node + 3], s, i);
+            }
+            else
+            {
+                i += (cp >= CP_MIN_SURROGATE ? 2 : 1);
+                if (i >= s.Count)
+                {
+                    if ((_tree[node] & EOS) == 0)
+                    {
+                        _tree[node] |= EOS;
+                        _size++;
+                    }
+                }
+                else
+                {
+                    _tree[node + 2] = AddCodePoints(_tree[node + 2], s, i);
+                }
+            }
+
+            return node;
+        }
+
         protected void Decompact()
         {
             throw new NotImplementedException("Decompact()");
@@ -729,6 +879,73 @@ namespace ftss
             if (cp > treeCp || cp == dc)
             {
                 GetPartialMatches(_tree[node + 3], pattern, i, dc, prefix, matches);
+            }
+        }
+
+        protected void GetWithinEditDistance(int node, IList<int> pat, int i, int dist, IList<int> prefix, FastTernaryStringSet o)
+        {
+            if (node >= _tree.Count || dist < 0) { return; }
+            int treeCp = _tree[node] & CP_MASK;
+            int eos = _tree[node] & EOS;
+
+            if (i < pat.Count)
+            {
+                int cp = pat[i];
+                int i_ = i + 1;
+                int dist_ = dist - 1;
+
+                if (cp == treeCp)
+                {
+                    /**
+                     * Character is a match;
+                     * move to the next character without using dist.
+                     */
+                    prefix.Add(cp);
+                    if (eos == EOS && i_ + dist >= pat.Count)
+                    {
+                        o.AddCodePoints(0, prefix, 0);
+                    }
+                    GetWithinEditDistance(_tree[node + 2], pat, i_, dist, prefix, o);
+                    prefix.Remove(prefix.Count - 1);
+                }
+                else if (dist > 0)
+                {
+                    /**
+                     * Character is not a match;
+                     * try with edits.
+                     */
+                    prefix.Add(treeCp);
+                    if (eos == EOS && i + dist >= pat.Count)
+                    {
+                        o.AddCodePoints(0, prefix, 0);
+                    }
+                    // Insert the tree's code point ahead of the pattern's.
+                    GetWithinEditDistance(_tree[node + 2], pat, i, dist_, prefix, o);
+                    // Substitute the tree'd code point with the pattern's
+                    GetWithinEditDistance(_tree[node + 2], pat, i_, dist_, prefix, o);
+                    prefix.Remove(prefix.Count - 1);
+                }
+
+                if (cp < treeCp || dist > 0)
+                {
+                    GetWithinEditDistance(_tree[node + 1], pat, i, dist, prefix, o);
+                }
+                if (cp > treeCp || dist > 0)
+                {
+                    GetWithinEditDistance(_tree[node + 3], pat, i, dist, prefix, o);
+                }
+            }
+            else if (dist > 0)
+            {
+                prefix.Add(treeCp);
+                if (eos == EOS)
+                {
+                    o.AddCodePoints(0, prefix, 0);
+                }
+                GetWithinEditDistance(_tree[node + 2], pat, i, dist - 1, prefix, o);
+                prefix.Remove(prefix.Count - 1);
+                GetWithinEditDistance(_tree[node + 1], pat, i, dist, prefix, o);
+                GetWithinEditDistance(_tree[node + 3], pat, i, dist, prefix, o);
             }
         }
 
