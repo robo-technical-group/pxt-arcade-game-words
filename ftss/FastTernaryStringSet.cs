@@ -1,5 +1,6 @@
 ﻿using NAryDict;
 using System.Collections;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
@@ -90,10 +91,24 @@ namespace ftss
             }
         }
 
+        public FastTernaryStringSet(FastTernaryStringSet? source)
+        {
+            this.Clear();
+            if (source is not null)
+            {
+                _tree = new List<int>(source._tree);
+                _hasEmpty = source._hasEmpty;
+                _compact = source._compact;
+                _size = source._size;
+            }
+        }
+
         /**
          * Public properties
          */
         public bool Compacted { get { return _compact; } }
+
+        public IList<string> Keys { get { return ToList(); } }
 
         public int Size { get { return _size; } }
 
@@ -150,6 +165,8 @@ namespace ftss
                 );
             }
         }
+
+        public IList<string> Values { get { return ToList(); } }
 
         /**
          * Public methods
@@ -306,7 +323,7 @@ namespace ftss
             while (true)
             {
                 pass++;
-                Console.WriteLine($"Compaction pass #{pass}");
+                Debug.WriteLine($"Compaction pass #{pass}");
                 IList<int> compacted = CompactionPass(source);
                 if (compacted.Count == source.Count)
                 {
@@ -368,6 +385,26 @@ namespace ftss
                 allDeleted = Delete(el) && allDeleted;
             }
             return allDeleted;
+        }
+
+        /**
+         * <summary>
+         * Calls the specified callback function once for each string in this set.
+         * </summary>
+         * 
+         * @param callbackFn The function to call for each string.
+         */
+        public void ForEach(Action<string> callback)
+        {
+            if (this._hasEmpty)
+            {
+                callback(string.Empty);
+            }
+            VisitCodePoints(0, [], (prefix, q) =>
+            {
+                string s = FromCodePoints(prefix);
+                callback(s);
+            });
         }
 
         public static string FromCodePoints(IList<int> codepoints)
@@ -599,7 +636,7 @@ namespace ftss
              * We avoid redundant work by computing possible deletions
              * ahead of time. (For example, aaa deletes to aa 3 different ways.)
              */
-            FastTernaryStringSet patterns = new([pattern,]);
+            FastTernaryStringSet patterns = new((string[])[pattern,]);
             for (int d = distance; d >= 0; d--)
             {
                 FastTernaryStringSet reducedPatterns = [];
@@ -883,7 +920,7 @@ namespace ftss
             Func<int, int> mapping = new((i) =>
             {
                 // slot = nodeMap[value][ltPointer][eqPointer][gtPointer]
-                Console.WriteLine($"i = {i}, tree.length = {tree.Count}");
+                Debug.WriteLine($"i = {i}, tree.length = {tree.Count}");
                 int[] val = new int[4];
                 if (i >= tree.Count - 3)
                 {
@@ -927,7 +964,7 @@ namespace ftss
             }
 
             // Check if tree would shrink before bothering to rewrite it.
-            Console.WriteLine($"nextslot = {nextSlot}");
+            Debug.WriteLine($"nextslot = {nextSlot}");
             if (nextSlot == tree.Count)
             {
                 return tree;
@@ -938,7 +975,7 @@ namespace ftss
             for (int i = 0; i < tree.Count; i += 4)
             {
                 int slot = mapping(i);
-                Console.WriteLine($"i = {i} slot = {slot}");
+                Debug.WriteLine($"i = {i} slot = {slot}");
 
                 // If the unique version of the node hasn't been written yet,
                 // then append it to the output array.

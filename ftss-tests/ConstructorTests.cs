@@ -21,7 +21,7 @@ namespace ftss_tests
         {
             // Arrange
             // Act
-            FastTernaryStringSet test = new([]);
+            FastTernaryStringSet test = new((string[])[]);
             // Assert
             int size = test.Size;
             Assert.AreEqual(0, size);
