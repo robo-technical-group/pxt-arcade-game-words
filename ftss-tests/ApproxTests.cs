@@ -446,15 +446,19 @@ namespace ftss_tests
                     Regex.IsMatch(s, @"^.a.$")).ToList();
             IList<string> match3 = lines.Where(s => s.Length == 3).ToList();
 
+            // Act
+            IList<string> test1 = test.GetWithinHammingDistanceOf("cat", 1);
+            IList<string> test2 = test.GetWithinHammingDistanceOf("cat", 2);
+            IList<string> test3 = test.GetWithinHammingDistanceOf("cat", 3);
 
-            // Act & Assert
+            // Assert
             CollectionAssert.AreEquivalent(new string[] { "cat", }, (List<string>)test.GetWithinHammingDistanceOf("cat", 0), "Test A");
             CollectionAssert.AreEquivalent((List<string>)match1,
-                (List<string>)test.GetWithinHammingDistanceOf("cat", 1), "Test B");
+                (List<string>)test1, "Test B");
             CollectionAssert.AreEquivalent((List<string>)match2,
-                (List<string>)test.GetWithinHammingDistanceOf("cat", 2), "Test C");
+                (List<string>)test2, "Test C");
             CollectionAssert.AreEquivalent((List<string>)match3,
-                (List<string>)test.GetWithinHammingDistanceOf("cat", 3), "Test D");
+                (List<string>)test3, "Test D");
         }
 
         [TestMethod]

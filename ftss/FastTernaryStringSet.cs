@@ -1,7 +1,7 @@
-﻿using System.Collections;
+﻿using NAryDict;
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using System.Xml.Schema;
 
 namespace ftss
 {
@@ -93,6 +93,8 @@ namespace ftss
         /**
          * Public properties
          */
+        public bool Compacted { get { return _compact; } }
+
         public int Size { get { return _size; } }
 
         public TernaryTreeStats Stats
@@ -207,6 +209,33 @@ namespace ftss
             }
         }
 
+        /**
+         * <summary>
+         * Balances the tree structure, minimizing the depth of the tree.
+         * This may improve search performance, especially after adding or deleting a large
+         * number of strings.
+         *
+         * It is not normally necessary to call this method as long as care was taken not
+         * to add large numbers of strings in lexicographic order. That said, two scenarios
+         * where this methof may be particularly useful are:
+         *  - If the set will be used in two phases, with strings being added in one phase
+         *    followed by a phase of extensive search operations.
+         *  - If the string is about to be serialized to a buffer for future use.
+         *
+         * As detailed under `addAll`, if the entire contents of the set were added by a single
+         * call to `addAll` using a sorted array, the tree is already balanced and calling this
+         * method will have no benefit.
+         *
+         * **Note:** This method undoes the effect of `compact()`. If you want to balance and
+         * compact the tree, be sure to balance it first.
+         * </summary>
+         */
+        public void Balance()
+        {
+            _tree = new FastTernaryStringSet(ToList())._tree;
+            _compact = false;
+        }
+
         /// <summary>Removes all strings from this set.</summary>
         [MemberNotNull(nameof(_tree), nameof(_hasEmpty), nameof(_compact), nameof(_size))]
         public void Clear()
@@ -215,6 +244,79 @@ namespace ftss
             _hasEmpty = false;
             _compact = false;
             _size = 0;
+        }
+
+        /**
+         * Compacts the set to reduce its memory footprint and improve search performance.
+         * Compaction allows certain nodes of the underlying tree to be shared, effectively
+         * converting it to a graph. For large sets, the result is typically a *significantly*
+         * smaller footprint. The tradeoff is that compacted sets cannot be mutated.
+         * Any attempt to do so, such as adding or deleting a string, will automatically
+         * decompact the set to a its standard tree form, if necessary, before performing
+         * the requested operation.
+         *
+         * Compaction is an excellent option if the primary purpose of a set is matching
+         * or searching against a fixed string collection. Since compaction and decompaction
+         * are both expensive operations, it may not be suitable if the set is expected to
+         * be modified intermittently.
+         */
+        public void Compact()
+        {
+            if (_compact || _tree.Count == 0) { return; }
+
+            /*
+
+            Theory of operation:
+
+            In a ternary tree, all strings with the same prefix share the nodes
+            that make up that prefix. The compact operation does much the same thing,
+            but for suffixes. It does this by deduplicating identical tree nodes.
+            For example, every string that ends in "e" and is not a prefix of any other
+            strings looks the same: an "e" node with three NUL child branch pointers.
+            But these can be distributed throughout the tree. Consider a tree containing only
+            "ape" and "haze": we could save space by having only a single copy of the "e" node
+            and pointing to it from both the "p" node and the "z" node.
+
+            So: to compact the tree, we iterate over each node and build a map of all unique nodes.
+            The first time we come across a node, we add it to the map, mapping the node to
+            a number which is the next available slot in the new, compacted, output array we will write.
+
+            Once we have built the map, we iterate over the nodes again. This time we look up each node
+            in the previously built map to find the slot it was assigned in the output array. If the
+            slot is past the end of the array, then we haven't added it to the output yet. We can
+            write the node's value unchanged, but the three pointers to the child branches need to
+            be rewritten to point to the new, deduplicated equivalent of the nodes that they point to now.
+            Thus for each branch, if the pointer is NUL we write it unchanged. Otherwise we look up the node
+            that the branch points to in our unique node map to get its new slot number (i.e. array offset)
+            and write the translated address.
+
+            After doing this once, we will have deduplicated just the leaf nodes. In the original tree,
+            only nodes with no children can be duplicates, because their branches are all NUL.
+            But after rewriting the tree, some of the parents of those leaf nodes may now point to
+            *shared* leaf nodes, so they themselves might now have duplicates in other parts of the tree.
+            So, we can repeat the rewriting step above to remove these newly generated duplicates as well.
+            This may again lead to new duplicates, and so on: rewriting continues until the output
+            doesn't shrink anymore.
+
+            */
+
+            IList<int> source = _tree;
+            _tree = [];
+            int pass = 0;
+            while (true)
+            {
+                pass++;
+                Console.WriteLine($"Compaction pass #{pass}");
+                IList<int> compacted = CompactionPass(source);
+                if (compacted.Count == source.Count)
+                {
+                    _tree = compacted;
+                    break;
+                }
+                source = compacted;
+            }
+
+            _compact = true;
         }
 
         /**
@@ -240,7 +342,7 @@ namespace ftss
                 return had;
             }
 
-            if (_compact&& Has(s))
+            if (_compact && Has(s))
             {
                 Decompact();
             }
@@ -298,7 +400,7 @@ namespace ftss
         {
             ArgumentNullException.ThrowIfNull(pattern);
             Dictionary<int, int> availChars = [];
-            for (int i = 0; i < pattern.Length; )
+            for (int i = 0; i < pattern.Length;)
             {
                 int c = pattern[i++];
                 if (c > CP_MIN_SURROGATE)
@@ -622,7 +724,7 @@ namespace ftss
         public static IList<int> ToCodePoints(string s)
         {
             IList<int> codepoints = [];
-            for (int i = 0; i < s.Length; )
+            for (int i = 0; i < s.Length;)
             {
                 char c = s[i++];
                 if (c >= CP_MIN_SURROGATE)
@@ -769,9 +871,105 @@ namespace ftss
             return node;
         }
 
+        protected static IList<int> CompactionPass(IList<int> tree)
+        {
+            // Nested lists are used to map node offsets ("pointers")
+            // in the original list to "slots" (a node's index in the new list).
+            int nextSlot = 0;
+            NAryDictionary<int, int, int, int, int> nodeMap = [];
+            
+            // If a node has already been assigned in a slot, then return that slot.
+            // Otherwise, assign it the next available slot and return that.
+            Func<int, int> mapping = new((i) =>
+            {
+                // slot = nodeMap[value][ltPointer][eqPointer][gtPointer]
+                Console.WriteLine($"i = {i}, tree.length = {tree.Count}");
+                int[] val = new int[4];
+                if (i >= tree.Count - 3)
+                {
+                    val[0] = val[1] = val[2] = val[3] = Int32.MaxValue;
+                }
+                else
+                {
+                    val[0] = tree[i];
+                    val[1] = tree[i + 1];
+                    val[2] = tree[i + 2];
+                    val[3] = tree[i + 3];
+                }
+                if (!nodeMap.TryGetValue(val[0], out NAryDictionary<int, int, int, int>? ltMap))
+                {
+                    ltMap = [];
+                    nodeMap.Add(val[0], ltMap);
+                }
+                if (!ltMap.TryGetValue(val[1], out NAryDictionary<int, int, int>? eqMap))
+                {
+                    eqMap = [];
+                    ltMap.Add(val[1], eqMap);
+                }
+                if (!eqMap.TryGetValue(val[2], out NAryDictionary<int, int>? gtMap))
+                {
+                    gtMap = [];
+                    eqMap.Add(val[2], gtMap);
+                }
+                if (!gtMap.TryGetValue(val[3], out int slot))
+                {
+                    slot = nextSlot;
+                    gtMap.Add(val[3], slot);
+                    nextSlot += 4;
+                }
+                return slot;
+            });
+
+            // Create a map of unique nodes.
+            for (int i = 0; i < tree.Count; i += 4)
+            {
+                mapping(i);
+            }
+
+            // Check if tree would shrink before bothering to rewrite it.
+            Console.WriteLine($"nextslot = {nextSlot}");
+            if (nextSlot == tree.Count)
+            {
+                return tree;
+            }
+
+            // Rewrite tree.
+            List<int> compactTree = [];
+            for (int i = 0; i < tree.Count; i += 4)
+            {
+                int slot = mapping(i);
+                Console.WriteLine($"i = {i} slot = {slot}");
+
+                // If the unique version of the node hasn't been written yet,
+                // then append it to the output array.
+                if (slot >= compactTree.Count)
+                {
+                    if (slot > compactTree.Count)
+                    {
+                        throw new IndexOutOfRangeException($"slot = {slot} too large.");
+                    }
+
+                    // Write the node value unchanged.
+                    compactTree.Insert(slot, tree[i]);
+
+                    // Write the pointers for each child branch,
+                    // but use the new slot for whatever child node
+                    // is found there.
+                    compactTree.Insert(slot + 1, mapping(tree[i + 1]));
+                    compactTree.Insert(slot + 2, mapping(tree[i + 2]));
+                    compactTree.Insert(slot + 3, mapping(tree[i + 3]));
+                }
+            }
+
+            return compactTree;
+        }
+
         protected void Decompact()
         {
-            throw new NotImplementedException("Decompact()");
+            if (this._compact)
+            {
+                this.Balance();
+            }
         }
 
         protected bool Delete(int node, string s, int i, char c)
@@ -921,7 +1119,7 @@ namespace ftss
                     }
                     // Insert the tree's code point ahead of the pattern's.
                     GetWithinEditDistance(_tree[node + 2], pat, i, dist_, prefix, o);
-                    // Substitute the tree'd code point with the pattern's
+                    // Substitute the tree's code point with the pattern's
                     GetWithinEditDistance(_tree[node + 2], pat, i_, dist_, prefix, o);
                     prefix.Remove(prefix.Count - 1);
                 }
@@ -952,6 +1150,7 @@ namespace ftss
         protected void GetWithinHammingDistance(int node, string pat, int i, int dist, IList<int> prefix, IList<string> o)
         {
             if (node >= _tree.Count || dist < 0) { return; }
+            if (i >= pat.Length) { return; }
             char cp = pat[i];
             int treeCp = _tree[node] & CP_MASK;
             if (cp < treeCp || dist > 0)

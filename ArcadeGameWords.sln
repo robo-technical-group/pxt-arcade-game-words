@@ -7,11 +7,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BloomFilters", "BloomFilter
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OldConsoleApps", "OldConsoleApps\OldConsoleApps.csproj", "{5FEF30CD-A7D7-4615-BA8C-28C732E89E8D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ftss", "ftss\ftss.csproj", "{B4DD2706-6AE5-4DF1-85B8-21C2A5A9E45E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ftss", "ftss\ftss.csproj", "{B4DD2706-6AE5-4DF1-85B8-21C2A5A9E45E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ftss-demo", "ftss-demo\ftss-demo.csproj", "{540315AD-BAA6-4C58-B965-CFA14B03CBB1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ftss-demo", "ftss-demo\ftss-demo.csproj", "{540315AD-BAA6-4C58-B965-CFA14B03CBB1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ftss-tests", "ftss-tests\ftss-tests.csproj", "{877DFA65-6DEF-4A42-B18C-142FD673F5E8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ftss-tests", "ftss-tests\ftss-tests.csproj", "{877DFA65-6DEF-4A42-B18C-142FD673F5E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NAryDict", "NAryDict\NAryDict.csproj", "{DC392218-DBC1-4871-A87D-A922D877DE84}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{877DFA65-6DEF-4A42-B18C-142FD673F5E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{877DFA65-6DEF-4A42-B18C-142FD673F5E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{877DFA65-6DEF-4A42-B18C-142FD673F5E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC392218-DBC1-4871-A87D-A922D877DE84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC392218-DBC1-4871-A87D-A922D877DE84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC392218-DBC1-4871-A87D-A922D877DE84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC392218-DBC1-4871-A87D-A922D877DE84}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
