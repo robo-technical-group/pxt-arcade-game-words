@@ -13,7 +13,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ftss-demo", "ftss-demo\ftss
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ftss-tests", "ftss-tests\ftss-tests.csproj", "{877DFA65-6DEF-4A42-B18C-142FD673F5E8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NAryDict", "NAryDict\NAryDict.csproj", "{DC392218-DBC1-4871-A87D-A922D877DE84}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NAryDict", "NAryDict\NAryDict.csproj", "{DC392218-DBC1-4871-A87D-A922D877DE84}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "typed-arrays", "typed-arrays\typed-arrays.csproj", "{0F3DF386-BAF7-42F3-98DF-F3A96A2D323D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ta-tests", "ta-tests\ta-tests.csproj", "{0B262B50-CB13-486C-A43C-484060499DCF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +49,14 @@ Global
 		{DC392218-DBC1-4871-A87D-A922D877DE84}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC392218-DBC1-4871-A87D-A922D877DE84}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DC392218-DBC1-4871-A87D-A922D877DE84}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F3DF386-BAF7-42F3-98DF-F3A96A2D323D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F3DF386-BAF7-42F3-98DF-F3A96A2D323D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F3DF386-BAF7-42F3-98DF-F3A96A2D323D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F3DF386-BAF7-42F3-98DF-F3A96A2D323D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B262B50-CB13-486C-A43C-484060499DCF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B262B50-CB13-486C-A43C-484060499DCF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B262B50-CB13-486C-A43C-484060499DCF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B262B50-CB13-486C-A43C-484060499DCF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
