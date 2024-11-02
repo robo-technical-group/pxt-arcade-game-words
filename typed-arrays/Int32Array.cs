@@ -36,69 +36,20 @@
 //  * Gradually migrating structure from Khronos spec to ES2015 spec
 //  * slice() implemention from https://github.com/ttaubert/node-arraybuffer-slice/
 //  * Base64 conversions from https://github.com/rrhett/typescript-base64-arraybuffer
+
 namespace typed_arrays;
 
-public class ArrayBuffer
+public class Int32Array : TypedArray
 {
-    protected int _byteLength;
-    protected IList<int> _bytes;
+    public Int32Array(int length = 0) : base(length) { }
 
-    public ArrayBuffer(int length = 0)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(length);
-        _byteLength = length;
-        _bytes = [];
-        for (int i = 0; i < length; i++)
-        {
-            _bytes.Add(0);
-        }
-    }
+    public Int32Array(IList<int> bytes) : base(bytes) { }
+    public Int32Array(ArrayBuffer source, int byteOffset = 0, int? length = null) :
+        base(source, byteOffset, length)
+    { }
+    public Int32Array(TypedArray source) : base(source) { }
 
-    /**
-     * Public properties
-     */
-    public int ByteLength { get { return _byteLength; } }
-    public IList<int> Bytes { get { return _bytes; } }
-
-    /**
-     * Public methods
-     */
-    public ArrayBuffer Slice(int from, int? to = null)
-    {
-        int length = _byteLength;
-        int begin = Clamp(from, length);
-        int end = length;
-
-        if (to != null)
-        {
-            end = Clamp(to.Value, length);
-        }
-
-        if (begin > end)
-        {
-            return new ArrayBuffer(0);
-        }
-
-        int num = end - begin;
-        ArrayBuffer target = new(num);
-        Uint8Array targetArray = new(target);
-        Uint8Array sourceArray = new(this, begin, num);
-        targetArray.Set(sourceArray);
-
-        return target;
-    }
-
-    public IList<int> ToList() { return [.. _bytes]; }
-
-    /**
-     * Protected methods
-     */
-    protected static int Clamp(int val, int length)
-    {
-        if (val < 0)
-        {
-            return Math.Max(val + length, 0);
-        }
-        return Math.Min(val, length);
-    }
+    public override int BytesPerElement => 4;
+    public override Func<int, IList<int>> Pack => value => Convert.PackI32(value);
+    public override Func<IList<int>, int> Unpack => bytes => Convert.UnpackI32(bytes);
 }

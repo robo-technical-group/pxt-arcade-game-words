@@ -1,39 +1,76 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿/*
+ Copyright (c) 2010, Linden Research, Inc.
+ Copyright (c) 2014, Joshua Bell
+
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
+ $/LicenseInfo$
+ */
+
+// Original can be found at:
+//   https://bitbucket.org/lindenlab/llsd
+// Modifications by Joshua Bell inexorabletash@gmail.com
+//   https://github.com/inexorabletash/polyfill
+
+// ES3/ES5 implementation of the Krhonos Typed Array Specification
+//   Ref: http://www.khronos.org/registry/typedarray/specs/latest/
+//   Date: 2011-02-01
+//
+// Variations:
+//  * Allows typed_array.get/set() as alias for subscripts (typed_array[])
+//  * Gradually migrating structure from Khronos spec to ES2015 spec
+//  * slice() implemention from https://github.com/ttaubert/node-arraybuffer-slice/
+//  * Base64 conversions from https://github.com/rrhett/typescript-base64-arraybuffer
+using System.Numerics;
 
 namespace typed_arrays;
 
 public abstract class TypedArray
 {
-    protected int BYTES_PER_ELEMENT;
     protected ArrayBuffer _buffer;
     protected int _byteLength;
     protected int _byteOffset;
     protected int _length;
-    protected Func<int, IList<int>> _pack;
-    protected Func<IList<int>, int> _unpack;
 
     public TypedArray(int length)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(length);
         _length = length;
         _byteOffset = 0;
+        _byteLength = _length * BytesPerElement;
+        _buffer = new ArrayBuffer(_byteLength);
     }
 
     public TypedArray(IList<int> source)
     {
-        int byteLength = source.Count * BYTES_PER_ELEMENT;
+        int byteLength = source.Count * BytesPerElement;
         _buffer = new ArrayBuffer(byteLength);
         _byteLength = byteLength;
         _byteOffset = 0;
         _length = source.Count;
 
-        for (int i = 0; i < this._length; i++)
+        for (int i = 0; i < _length; i++)
         {
             Set(i, source[i]);
         }
     }
 
-    public TypedArray(ArrayBuffer source, int byteOffset = 0, int? length)
+    public TypedArray(ArrayBuffer source, int byteOffset = 0, int? length = null)
     {
         if (byteOffset > source.ByteLength)
         {
@@ -44,7 +81,7 @@ public abstract class TypedArray
          * The given byteOffset must be a multiple of the
          * element size of the specific type.
          */
-        if (byteOffset % BYTES_PER_ELEMENT != 0)
+        if (byteOffset % BytesPerElement != 0)
         {
             throw new ArgumentException("Buffer length minus the byteOffset is not a multiple of the element size.",
                 nameof(byteOffset));
@@ -54,16 +91,16 @@ public abstract class TypedArray
         if (!length.HasValue)
         {
             byteLength = source.ByteLength - byteOffset;
-            if (byteLength % BYTES_PER_ELEMENT != 0)
+            if (byteLength % BytesPerElement != 0)
             {
                 throw new ArgumentException("Length of buffer minus byteOffset not a multiple of the element size.",
                     nameof(byteOffset));
             }
-            length = byteLength / BYTES_PER_ELEMENT;
+            length = byteLength / BytesPerElement;
         }
         else
         {
-            byteLength = length.Value * BYTES_PER_ELEMENT;
+            byteLength = length.Value * BytesPerElement;
         }
 
         if ((byteOffset + byteLength) > source.ByteLength)
@@ -79,7 +116,7 @@ public abstract class TypedArray
 
     public TypedArray(TypedArray source)
     {
-        int byteLength = source._length * BYTES_PER_ELEMENT;
+        int byteLength = source._length * BytesPerElement;
         _buffer = new ArrayBuffer(byteLength);
         _byteLength = byteLength;
         _byteOffset = 0;
@@ -97,8 +134,10 @@ public abstract class TypedArray
     public ArrayBuffer Buffer { get { return _buffer; } }
     public int ByteLength { get { return _byteLength; } }
     public int ByteOffset { get { return _byteOffset; } }
-    public int BytesPerElement { get { return BYTES_PER_ELEMENT; } }
+    public abstract int BytesPerElement { get; }
     public int Length {  get { return _length; } }
+    public abstract Func<int, IList<int>> Pack { get; }
+    public abstract Func<IList<int>, int> Unpack { get; }
 
     /**
      * Public methods
@@ -107,26 +146,27 @@ public abstract class TypedArray
     public int Get(int index)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _length);
-        IList<int> bytes = new List<int>();
+
+        IList<int> bytes = [];
         for (
-            int i = 0, o = _byteOffset + index * BYTES_PER_ELEMENT;
-            i < BYTES_PER_ELEMENT;
+            int i = 0, o = _byteOffset + index * BytesPerElement;
+            i < BytesPerElement;
             i++, o++
         )
         {
             bytes.Add(_buffer.Bytes[o]);
         }
-        return _unpack(bytes);
+        return Unpack(bytes);
     }
 
     public void Set(int index, int value)
     {
         if (index >= _length) { return; }
 
-        IList<int> bytes = _pack(value);
+        IList<int> bytes = Pack(value);
         for (
-            int i = 0, o = _byteOffset + index * BYTES_PER_ELEMENT;
-            i < BYTES_PER_ELEMENT;
+            int i = 0, o = _byteOffset + index * BytesPerElement;
+            i < BytesPerElement;
             i++, o++
         )
         {
@@ -155,12 +195,12 @@ public abstract class TypedArray
             throw new ArgumentOutOfRangeException(nameof(source)); 
         }
 
-        int byteOffset = _byteOffset + offset * BYTES_PER_ELEMENT;
-        int byteLength = source._length * BYTES_PER_ELEMENT;
+        int byteOffset = _byteOffset + offset * BytesPerElement;
+        int byteLength = source._length * BytesPerElement;
 
         if (source.Buffer == _buffer)
         {
-            IList<int> tmp = new List<int>();
+            IList<int> tmp = [];
             for (
                 int i = 0, s = source.ByteOffset;
                 i < byteLength;
@@ -190,4 +230,6 @@ public abstract class TypedArray
             }
         }
     }
+
+    public IList<int> ToList() { return _buffer.ToList(); }
 }
