@@ -37,11 +37,10 @@
 //  * slice() implemention from https://github.com/ttaubert/node-arraybuffer-slice/
 //  * Base64 conversions from https://github.com/rrhett/typescript-base64-arraybuffer
 namespace typed_arrays;
-
 public class ArrayBuffer
 {
     protected int _byteLength;
-    protected IList<int> _bytes;
+    protected IList<uint> _bytes;
 
     public ArrayBuffer(int length = 0)
     {
@@ -58,7 +57,7 @@ public class ArrayBuffer
      * Public properties
      */
     public int ByteLength { get { return _byteLength; } }
-    public IList<int> Bytes { get { return _bytes; } }
+    public IList<uint> Bytes { get { return _bytes; } }
 
     /**
      * Public methods
@@ -81,14 +80,14 @@ public class ArrayBuffer
 
         int num = end - begin;
         ArrayBuffer target = new(num);
-        Uint8Array targetArray = new(target);
-        Uint8Array sourceArray = new(this, begin, num);
+        TypedArray<byte> targetArray = new(target);
+        TypedArray<byte> sourceArray = new(this, begin, num);
         targetArray.Set(sourceArray);
 
         return target;
     }
 
-    public IList<int> ToList() { return [.. _bytes]; }
+    public IList<uint> ToList() { return [.. _bytes]; }
 
     /**
      * Protected methods
