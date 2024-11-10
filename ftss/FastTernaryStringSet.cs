@@ -468,12 +468,13 @@ namespace ftss
 
         public string Get(int index)
         {
+            ArgumentOutOfRangeException.ThrowIfNegative(index, nameof(index));
             ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, (int)_size);
-            string toReturn = String.Empty;
             if (_hasEmpty && index == 0)
             {
-                return toReturn;
+                return String.Empty;
             }
+            string toReturn = String.Empty;
             int count = _hasEmpty ? 1 : 0;
             SearchCodePoints(0, [], (prefix, node) =>
             {
