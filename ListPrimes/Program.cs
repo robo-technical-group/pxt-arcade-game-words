@@ -3,7 +3,6 @@
 // See https://aka.ms/new-console-template for more information
 Console.WriteLine("Hello, World!");
 
-// https://csharphelper.com/howtos/howto_linked_list_primes.html
 const int MAX_VAL = 10_000_000;
 bool PRINT = false;
 System.Diagnostics.Stopwatch sw = new();
@@ -17,6 +16,7 @@ Console.WriteLine();
 Console.WriteLine($"Found {primes.Count:#,###,###,###} prime numbers up to {MAX_VAL:#,###,###,###} in {sw.Elapsed.TotalSeconds:0.00} seconds.");
 Console.WriteLine($"Largest prime found: {primes[primes.Count - 1]:#,###,###,###}");
 
+// https://csharphelper.com/howtos/howto_linked_list_primes.html
 void StandardMethod()
 {
     primes = [2,];
