@@ -466,6 +466,28 @@ namespace ftss
             return sb.ToString();
         }
 
+        public string Get(int index)
+        {
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, (int)_size);
+            string toReturn = String.Empty;
+            if (_hasEmpty && index == 0)
+            {
+                return toReturn;
+            }
+            int count = _hasEmpty ? 1 : 0;
+            SearchCodePoints(0, [], (prefix, node) =>
+            {
+                count++;
+                if (count == index)
+                {
+                    toReturn = FromCodePoints(prefix);
+                    return true;
+                }
+                return false;
+            });
+            return toReturn;
+        }
+
         /**
          * <summary>
          * Returns all strings in this set that can be composed from combinations of the code points
@@ -1618,6 +1640,25 @@ namespace ftss
                     return HasCodePoints(_tree[(int)node + 2], s, i);
                 }
             }
+        }
+
+        protected bool SearchCodePoints(uint node, IList<uint> prefix, Func<IList<uint>, uint, bool> visitFn)
+        {
+            if (node >= _tree.Count) { return false; }
+            if (SearchCodePoints(_tree[(int)node + 1], prefix, visitFn)) { return true; }
+            prefix.Add(_tree[(int)node] & CP_MASK);
+            if ((_tree[(int)node] & EOS) != 0)
+            {
+                if (visitFn(prefix, node))
+                {
+                    prefix.RemoveAt(prefix.Count - 1);
+                    return true;
+                }
+            }
+            if (SearchCodePoints(_tree[(int)node + 2], prefix, visitFn)) { return true; }
+            prefix.RemoveAt(prefix.Count - 1);
+            if (SearchCodePoints(_tree[(int)node + 3], prefix, visitFn) ) { return true; }
+            return false;
         }
 
         protected void VisitCodePoints(uint node, IList<uint> prefix, Action<IList<uint>, uint> visitFn)
