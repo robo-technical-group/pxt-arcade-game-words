@@ -152,6 +152,8 @@ namespace ftss
         /**
          * Public properties
          */
+        public string this[int index] { get { return Get(index); } }
+
         public bool Compacted { get { return _compact; } }
 
         public IList<string> Keys { get { return ToList(); } }

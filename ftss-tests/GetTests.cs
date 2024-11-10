@@ -44,7 +44,7 @@ public class GetTests
         for (int i = 0; i < 100;  i++)
         {
             int index = Random.Shared.Next(0, lines.Length - 1);
-            string word = test.Get(index);
+            string word = test[index];
             Console.WriteLine(word);
             Assert.AreNotEqual(0, word.Length, $"Test {i}");
         }
