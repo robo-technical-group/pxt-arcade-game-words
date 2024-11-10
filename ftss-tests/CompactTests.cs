@@ -10,11 +10,11 @@ namespace ftss_tests
         private static string[] _lines = [];
 
         [MemberNotNull(nameof(_compactWords))]
-        private static void Init()
+        private async Task Init()
         {
             if (_compactWords is not null) { return; }
             _compactWords = [];
-            _lines = TestFiles.short_english_list
+            _lines = (await Common.GetResourceFileContents("short-english-list.txt"))
                 .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             _compactWords.AddAll(_lines);
             _compactWords.Compact();
@@ -91,7 +91,7 @@ namespace ftss_tests
             test.Compact();
 
             // Assert
-            Assert.AreEqual(3 * (test.Size - 1), preCompactSize - test.Stats.Nodes);
+            Assert.AreEqual<uint>(3 * (test.Size - 1), (uint)(preCompactSize - test.Stats.Nodes));
         }
 
         [TestMethod]
@@ -150,18 +150,18 @@ namespace ftss_tests
         }
 
         [TestMethod]
-        public void CompactDictionary()
+        public async Task CompactDictionary()
         {
             // Arrange
             if (_compactWords is null)
             {
-                Init();
+                await Init();
             }
             FastTernaryStringSet nonCompactWords = [];
             nonCompactWords.AddAll(_lines);
 
             // Act & Assert
-            Assert.AreEqual(_lines.Length, _compactWords.Size, "Test A");
+            Assert.AreEqual((uint)_lines.Length, _compactWords.Size, "Test A");
 
             /**
              * Non-trivial compacted set should have fewer nodes.
@@ -259,13 +259,13 @@ namespace ftss_tests
         }
 
         [TestMethod]
-        public void CompactNonMutating()
+        public async Task CompactNonMutating()
         {
             // Arrange
             FastTernaryStringSet rhs = new(new string[] { "list", "wrestle", });
             if (_compactWords is null)
             {
-                Init();
+                await Init();
             }
             FastTernaryStringSet test = new(_compactWords);
 
@@ -281,7 +281,7 @@ namespace ftss_tests
             // test.IsSubsetOf(rhs);
             // test.IsSupersetOf(rhs):
             IList<string> _ = test.Keys;
-            int __ = test.Size;
+            uint __ = test.Size;
             _ = test.Values;
 
             // Assert

@@ -3,17 +3,28 @@ using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using typed_arrays;
+// using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ftss
 {
+    public record struct DecodedBuffer(
+        byte Version,
+        bool HasEmpty,
+        bool Compact,
+        bool V2B16,
+        uint Size,
+        IList<uint> Tree
+    );
+
     public readonly record struct TernaryTreeStats(
-        int Size,
+        uint Size,
         int Nodes,
         bool IsCompact,
         int Depth,
         IEnumerable<int> Breadth,
-        int MinCodePoint,
-        int MaxCodePoint,
+        uint MinCodePoint,
+        uint MaxCodePoint,
         int Surrogates
     );
 
@@ -22,16 +33,28 @@ namespace ftss
         /**
          * Constants
          */
-        ///<summary>Node index indicating that no node is present.</summary>
-        const int NUL = ~(1 << 31);
+        /// <summary>Node index indicating that no node is present.</summary>
+        const uint NUL = ~(1 << 31);
         /// <summary>First node index that would run off of the end of the array.</summary>
-        const int NODE_CEILING = NUL - 3;
+        const uint NODE_CEILING = NUL - 3;
         /// <summary>End-of-string flag: set on node values when that node also marks the end of a string.</summary>
-        const int EOS = 1 << 21;
+        const uint EOS = 1 << 21;
         /// <summary>Mask to extract the code point from a node value, ignoring flags.</summary>
-        const int CP_MASK = EOS - 1;
+        const uint CP_MASK = EOS - 1;
         /// <summary>Smallest code point that requires a surrogate pair.</summary>
-        const int CP_MIN_SURROGATE = 0x10000;
+        const uint CP_MIN_SURROGATE = 0x10000;
+        /// <summary>Version number for the data buffer format.</summary>
+        const int BUFF_VERSION = 3;
+        /// <summary>Magic number used by buffer data format.</summary>
+        const int BUFF_MAGIC = 84;
+        /// <summary>Buffer format header size (4 bytes magic/properties + 4 bytes node count).</summary>
+        const int BUFF_HEAD_SIZE = 8;
+        /// <summary>Buffer format flag bit: set has empty string</summary>
+        const byte BF_HAS_EMPTY = 1;
+        /// <summary>Buffer format flag bit: set is compact</summary>
+        const byte BF_COMPACT = 2;
+        /// <summary>Buffer format flag bit: v2 file uses 16-bit integers for branch pointers.</summary>
+        const byte BF_BRANCH16 = 4;
 
         /**
          * <summary>
@@ -43,7 +66,7 @@ namespace ftss
          * 4. `tree[n+3]`: array index of the "greater than" branch's child node
          * </summary>
          */
-        protected IList<int> _tree;
+        protected IList<uint> _tree;
         /// <summary>Tracks whether empty string is in the set as a special case.</summary>
         protected bool _hasEmpty;
         /**
@@ -53,7 +76,7 @@ namespace ftss
          */
         protected bool _compact;
         /// <summary>Tracks set size.</summary>
-        protected int _size;
+        protected uint _size;
 
         /**
          * <summary>
@@ -96,11 +119,34 @@ namespace ftss
             this.Clear();
             if (source is not null)
             {
-                _tree = new List<int>(source._tree);
+                _tree = new List<uint>(source._tree);
                 _hasEmpty = source._hasEmpty;
                 _compact = source._compact;
                 _size = source._size;
             }
+        }
+
+        /**
+         * <summary>
+         * Creates a new string set from data in a buffer previously created with `toBuffer`.
+         * Buffers created by an older version of this library can be deserialized by newer versions
+         * of this library.
+         * The reverse may or may not be true, depending on the specific versions involved.
+         * Throws `ArgumentNullError` if the specified buffer is null.
+         * Throws `TypeError` if the buffer data is invalid or from an unsupported version.
+         *
+         * Returns A new set that recreates the original set that was stored in the buffer.
+         * </summary>
+         * <param name="buffer">The buffer to recreate the set from.</param>
+         */
+        public FastTernaryStringSet(ArrayBuffer buffer)
+        {
+            ArgumentNullException.ThrowIfNull(buffer);
+            DecodedBuffer h = Decode(buffer);
+            _hasEmpty = h.HasEmpty;
+            _compact = h.Compact;
+            _size = h.Size;
+            _tree = h.Tree;
         }
 
         /**
@@ -110,7 +156,7 @@ namespace ftss
 
         public IList<string> Keys { get { return ToList(); } }
 
-        public int Size { get { return _size; } }
+        public uint Size { get { return _size; } }
 
         public TernaryTreeStats Stats
         {
@@ -119,10 +165,10 @@ namespace ftss
                 List<int> breadth = [];
                 int nodes = _tree.Count / 4;
                 int surrogates = 0;
-                int minCodePoint = nodes > 0 ? 0x10ffff : 0;
-                int maxCodePoint = 0;
+                uint minCodePoint = nodes > 0 ? (uint)0x10ffff : 0;
+                uint maxCodePoint = 0;
 
-                void traverse(int n, int d)
+                void traverse(uint n, int d)
                 {
                     if (n >= _tree.Count)
                     {
@@ -133,7 +179,7 @@ namespace ftss
                         breadth.Add(0);
                     }
                     breadth[d]++;
-                    int cp = _tree[n] & CP_MASK;
+                    uint cp = _tree[(int)n] & CP_MASK;
                     if (cp >= CP_MIN_SURROGATE)
                     {
                         surrogates++;
@@ -147,9 +193,9 @@ namespace ftss
                         minCodePoint = cp;
                     }
 
-                    traverse(_tree[n + 1], d + 1);
-                    traverse(_tree[n + 2], d + 1);
-                    traverse(_tree[n + 3], d + 1);
+                    traverse(_tree[(int)n + 1], d + 1);
+                    traverse(_tree[(int)n + 2], d + 1);
+                    traverse(_tree[(int)n + 3], d + 1);
                 }
                 traverse(0, 0);
 
@@ -165,6 +211,9 @@ namespace ftss
                 );
             }
         }
+
+        // For testing only
+        // public IList<uint> Tree {  get { return _tree; } }
 
         public IList<string> Values { get { return ToList(); } }
 
@@ -317,14 +366,14 @@ namespace ftss
 
             */
 
-            IList<int> source = _tree;
+            IList<uint> source = _tree;
             _tree = [];
             int pass = 0;
             while (true)
             {
                 pass++;
-                Debug.WriteLine($"Compaction pass #{pass}");
-                IList<int> compacted = CompactionPass(source);
+                // Debug.WriteLine($"Compaction pass #{pass}");
+                IList<uint> compacted = CompactionPass(source);
                 if (compacted.Count == source.Count)
                 {
                     _tree = compacted;
@@ -407,10 +456,10 @@ namespace ftss
             });
         }
 
-        public static string FromCodePoints(IList<int> codepoints)
+        public static string FromCodePoints(IList<uint> codepoints)
         {
             StringBuilder sb = new();
-            foreach (int i in codepoints)
+            foreach (uint i in codepoints)
             {
                 sb.Append((char)i);
             }
@@ -436,10 +485,10 @@ namespace ftss
         public IList<string> GetArrangementsOf(string pattern)
         {
             ArgumentNullException.ThrowIfNull(pattern);
-            Dictionary<int, int> availChars = [];
+            Dictionary<uint, uint> availChars = [];
             for (int i = 0; i < pattern.Length;)
             {
-                int c = pattern[i++];
+                uint c = pattern[i++];
                 if (c > CP_MIN_SURROGATE)
                 {
                     i++;
@@ -479,9 +528,9 @@ namespace ftss
                 return ToList();
             }
             IList<string> results = [];
-            IList<int> pat = FastTernaryStringSet.ToCodePoints(suffix);
+            IList<uint> pat = FastTernaryStringSet.ToCodePoints(suffix);
 
-            VisitCodePoints(0, [], (IList<int> s, int q) =>
+            VisitCodePoints(0, [], (IList<uint> s, uint q) =>
             {
                 if (s.Count >= pat.Count)
                 {
@@ -520,11 +569,11 @@ namespace ftss
             }
 
             IList<string> results = [];
-            IList<int> pat = FastTernaryStringSet.ToCodePoints(prefix);
-            int node = HasCodePoints(0, pat, 0);
-            if (node < 0)
+            IList<uint> pat = FastTernaryStringSet.ToCodePoints(prefix);
+            uint node = HasCodePoints(0, pat, 0);
+            if ((int)node < 0)
             {
-                node = -node - 1;
+                node = uint.MaxValue - node;
                 // Prefix is not in tree; no children are, either.
                 if (node >= _tree.Count)
                 {
@@ -538,7 +587,7 @@ namespace ftss
             }
 
             // Continue from end of prefix by taking equal branch.
-            VisitCodePoints(_tree[node + 2], pat, (IList<int> s, int i) =>
+            VisitCodePoints(_tree[(int)node + 2], pat, (IList<uint> s, uint i) =>
             {
                 results.Add(FastTernaryStringSet.FromCodePoints(s));
             });
@@ -662,7 +711,7 @@ namespace ftss
                         }
                         else
                         {
-                            int[] delete1 = new int[cp.Count - 1];
+                            uint[] delete1 = new uint[cp.Count - 1];
                             for (int i = 0; i < cp.Count; i++)
                             {
                                 for (int j = 0; j < i; j++)
@@ -748,19 +797,37 @@ namespace ftss
             return [.. ToList()];
         }
 
+        /**
+         * <summary>
+         * Returns a buffer whose contents can be used to recreate this set.
+         * The returned data is independent of the platform on which it is created.
+         * The buffer content and length will depend on the state of the set's
+         * underlying structure. For this reason you may wish to `balance()`
+         * and/or `compact()` the set first.
+         *
+         * Returns A non-null buffer.
+         * </summary>
+         */
+        public ArrayBuffer ToBuffer()
+        {
+            return Encode(
+                _size, _hasEmpty, _compact, _tree
+            );
+        }
+
         public IList<string> ToList()
         {
-            IList<string> a = _hasEmpty ? [string.Empty] : [];
-            VisitCodePoints(0, [], (IList<int> s, int i) =>
+            IList<string> a = _hasEmpty ? [string.Empty,] : [];
+            VisitCodePoints(0, [], (IList<uint> s, uint i) =>
             {
                 a.Add(FastTernaryStringSet.FromCodePoints(s));
             });
             return a;
         }
 
-        public static IList<int> ToCodePoints(string s)
+        public static IList<uint> ToCodePoints(string s)
         {
-            IList<int> codepoints = [];
+            IList<uint> codepoints = [];
             for (int i = 0; i < s.Length;)
             {
                 char c = s[i++];
@@ -794,12 +861,12 @@ namespace ftss
         /**
          * Protected methods
          */
-        protected int Add(int node, string s, int i, char c)
+        protected uint Add(uint node, string s, int i, char c)
         {
             _tree ??= [];
             if (node >= _tree.Count)
             {
-                node = _tree.Count;
+                node = (uint)_tree.Count;
                 if (node >= NODE_CEILING)
                 {
                     throw new OutOfMemoryException("Add(): Cannot add more strings.");
@@ -810,29 +877,29 @@ namespace ftss
                 _tree.Add(NUL);
             }
 
-            int treeChar = _tree[node] & CP_MASK;
+            uint treeChar = _tree[(int)node] & CP_MASK;
             if (c < treeChar)
             {
-                _tree[node + 1] = Add(_tree[node + 1], s, i, c);
+                _tree[(int)node + 1] = Add(_tree[(int)node + 1], s, i, c);
             }
             else if (c > treeChar)
             {
-                _tree[node + 3] = Add(_tree[node + 3], s, i, c);
+                _tree[(int)node + 3] = Add(_tree[(int)node + 3], s, i, c);
             }
             else
             {
                 i += c >= CP_MIN_SURROGATE ? 2 : 1;
                 if (i >= s.Length)
                 {
-                    if ((_tree[node] & EOS) == 0)
+                    if ((_tree[(int)node] & EOS) == 0)
                     {
-                        _tree[node] |= EOS;
+                        _tree[(int)node] |= EOS;
                         _size++;
                     }
                 }
                 else
                 {
-                    _tree[node + 2] = Add(_tree[node + 2], s, i, s[i]);
+                    _tree[(int)node + 2] = Add(_tree[(int)node + 2], s, i, s[i]);
                 }
             }
             return node;
@@ -866,12 +933,12 @@ namespace ftss
          * <param name="s">The non-null array of code points to add.</param>
          * <param name="i">The array index of the code point to start from (0 to add entire string).</param>
          */
-        protected int AddCodePoints(int node, IList<int> s, int i)
+        protected uint AddCodePoints(uint node, IList<uint> s, int i)
         {
-            int cp = s[i];
+            uint cp = s[i];
             if (node >= _tree.Count)
             {
-                node = _tree.Count;
+                node = (uint)_tree.Count;
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(node, NODE_CEILING);
             }
             _tree.Add(cp);
@@ -879,76 +946,76 @@ namespace ftss
             _tree.Add(NUL);
             _tree.Add(NUL);
 
-            int treeCp = _tree[node] & CP_MASK;
+            uint treeCp = _tree[(int)node] & CP_MASK;
             if (cp < treeCp)
             {
-                _tree[node + 1] = AddCodePoints(_tree[node + 1], s, i);
+                _tree[(int)node + 1] = AddCodePoints(_tree[(int)node + 1], s, i);
             }
             else if (cp > treeCp)
             {
-                _tree[node + 3] = AddCodePoints(_tree[node + 3], s, i);
+                _tree[(int)node + 3] = AddCodePoints(_tree[(int)node + 3], s, i);
             }
             else
             {
                 i += (cp >= CP_MIN_SURROGATE ? 2 : 1);
                 if (i >= s.Count)
                 {
-                    if ((_tree[node] & EOS) == 0)
+                    if ((_tree[(int)node] & EOS) == 0)
                     {
-                        _tree[node] |= EOS;
+                        _tree[(int)node] |= EOS;
                         _size++;
                     }
                 }
                 else
                 {
-                    _tree[node + 2] = AddCodePoints(_tree[node + 2], s, i);
+                    _tree[(int)node + 2] = AddCodePoints(_tree[(int)node + 2], s, i);
                 }
             }
 
             return node;
         }
 
-        protected static IList<int> CompactionPass(IList<int> tree)
+        protected static IList<uint> CompactionPass(IList<uint> tree)
         {
             // Nested lists are used to map node offsets ("pointers")
             // in the original list to "slots" (a node's index in the new list).
-            int nextSlot = 0;
-            NAryDictionary<int, int, int, int, int> nodeMap = [];
+            uint nextSlot = 0;
+            NAryDictionary<uint, uint, uint, uint, uint> nodeMap = [];
             
             // If a node has already been assigned in a slot, then return that slot.
             // Otherwise, assign it the next available slot and return that.
-            Func<int, int> mapping = new((i) =>
+            Func<uint, uint> mapping = new((i) =>
             {
                 // slot = nodeMap[value][ltPointer][eqPointer][gtPointer]
-                Debug.WriteLine($"i = {i}, tree.length = {tree.Count}");
-                int[] val = new int[4];
+                // Debug.WriteLine($"i = {i}, tree.length = {tree.Count}");
+                uint[] val = new uint[4];
                 if (i >= tree.Count - 3)
                 {
-                    val[0] = val[1] = val[2] = val[3] = Int32.MaxValue;
+                    val[0] = val[1] = val[2] = val[3] = UInt32.MaxValue;
                 }
                 else
                 {
-                    val[0] = tree[i];
-                    val[1] = tree[i + 1];
-                    val[2] = tree[i + 2];
-                    val[3] = tree[i + 3];
+                    val[0] = tree[(int)i];
+                    val[1] = tree[(int)i + 1];
+                    val[2] = tree[(int)i + 2];
+                    val[3] = tree[(int)i + 3];
                 }
-                if (!nodeMap.TryGetValue(val[0], out NAryDictionary<int, int, int, int>? ltMap))
+                if (!nodeMap.TryGetValue(val[0], out NAryDictionary<uint, uint, uint, uint>? ltMap))
                 {
                     ltMap = [];
                     nodeMap.Add(val[0], ltMap);
                 }
-                if (!ltMap.TryGetValue(val[1], out NAryDictionary<int, int, int>? eqMap))
+                if (!ltMap.TryGetValue(val[1], out NAryDictionary<uint, uint, uint>? eqMap))
                 {
                     eqMap = [];
                     ltMap.Add(val[1], eqMap);
                 }
-                if (!eqMap.TryGetValue(val[2], out NAryDictionary<int, int>? gtMap))
+                if (!eqMap.TryGetValue(val[2], out NAryDictionary<uint, uint>? gtMap))
                 {
                     gtMap = [];
                     eqMap.Add(val[2], gtMap);
                 }
-                if (!gtMap.TryGetValue(val[3], out int slot))
+                if (!gtMap.TryGetValue(val[3], out uint slot))
                 {
                     slot = nextSlot;
                     gtMap.Add(val[3], slot);
@@ -958,24 +1025,24 @@ namespace ftss
             });
 
             // Create a map of unique nodes.
-            for (int i = 0; i < tree.Count; i += 4)
+            for (uint i = 0; i < tree.Count; i += 4)
             {
                 mapping(i);
             }
 
             // Check if tree would shrink before bothering to rewrite it.
-            Debug.WriteLine($"nextslot = {nextSlot}");
+            // Debug.WriteLine($"nextslot = {nextSlot}");
             if (nextSlot == tree.Count)
             {
                 return tree;
             }
 
             // Rewrite tree.
-            List<int> compactTree = [];
-            for (int i = 0; i < tree.Count; i += 4)
+            List<uint> compactTree = [];
+            for (uint i = 0; i < tree.Count; i += 4)
             {
-                int slot = mapping(i);
-                Debug.WriteLine($"i = {i} slot = {slot}");
+                uint slot = mapping(i);
+                // Debug.WriteLine($"i = {i} slot = {slot}");
 
                 // If the unique version of the node hasn't been written yet,
                 // then append it to the output array.
@@ -987,14 +1054,14 @@ namespace ftss
                     }
 
                     // Write the node value unchanged.
-                    compactTree.Insert(slot, tree[i]);
+                    compactTree.Insert((int)slot, tree[(int)i]);
 
                     // Write the pointers for each child branch,
                     // but use the new slot for whatever child node
                     // is found there.
-                    compactTree.Insert(slot + 1, mapping(tree[i + 1]));
-                    compactTree.Insert(slot + 2, mapping(tree[i + 2]));
-                    compactTree.Insert(slot + 3, mapping(tree[i + 3]));
+                    compactTree.Insert((int)slot + 1, mapping(tree[(int)i + 1]));
+                    compactTree.Insert((int)slot + 2, mapping(tree[(int)i + 2]));
+                    compactTree.Insert((int)slot + 3, mapping(tree[(int)i + 3]));
                 }
             }
 
@@ -1009,90 +1076,366 @@ namespace ftss
             }
         }
 
-        protected bool Delete(int node, string s, int i, char c)
+        protected static DecodedBuffer Decode(ArrayBuffer buff)
+        {
+            DataView view = new(buff);
+            DecodedBuffer decoded = DecodeHeader(view);
+            if (decoded.Version < 3)
+            {
+                DecodeV1V2(decoded, view);
+            }
+            else
+            {
+                DecodeV3(decoded, view);
+            }
+            return decoded;
+        }
+
+        protected static DecodedBuffer DecodeHeader(DataView view)
+        {
+            DecodedBuffer h = new();
+            if (view.ByteLength < BUFF_HEAD_SIZE)
+            {
+                throw new ArgumentException("Header too short.");
+            }
+            if (
+                view.GetUInt8(0) != BUFF_MAGIC ||
+                view.GetUInt8(1) != BUFF_MAGIC
+            )
+            {
+                throw new ArgumentException("Header has bad magic codes.");
+            }
+            h.Version = view.GetUInt8(2);
+            if (h.Version < 1 || h.Version > BUFF_VERSION)
+            {
+                throw new ArgumentException($"Unsupported version ${h.Version}.");
+            }
+
+            byte flags = view.GetUInt8(3);
+            h.HasEmpty = (flags & BF_HAS_EMPTY) != 0;
+            h.Compact = (flags & BF_COMPACT) != 0;
+            h.V2B16 = (flags & BF_BRANCH16) != 0;
+
+            if (h.V2B16 && h.Version != 2)
+            {
+                throw new ArgumentException("B16 without V2.");
+            }
+            if ((flags & ~(BF_HAS_EMPTY | BF_COMPACT | BF_BRANCH16)) != 0)
+            {
+                throw new ArgumentException("Unknown flag value.");
+            }
+
+            h.Size = view.GetUInt32(4);
+            h.Tree = [];
+            return h;
+        }
+
+        protected static void DecodeV1V2(DecodedBuffer h, DataView view)
+        {
+            for (int b = BUFF_HEAD_SIZE; b < view.ByteLength; )
+            {
+                h.Tree.Add(view.GetUInt32(b));
+                b += 4;
+                if (h.V2B16)
+                {
+                    h.Tree.Add(view.GetUInt16(b));
+                    b += 2;
+                    h.Tree.Add(view.GetUInt16(b));
+                    b += 2;
+                    h.Tree.Add(view.GetUInt16(b));
+                    b += 2;
+                }
+                else
+                {
+                    h.Tree.Add(view.GetUInt32(b));
+                    b += 4;
+                    h.Tree.Add(view.GetUInt32(b));
+                    b += 4;
+                    h.Tree.Add(view.GetUInt32(b));
+                    b += 4;
+                }
+            }
+            if (h.Version == 1)
+            {
+                /**
+                 * V1 didn't store size.
+                 * Need t count the size, but we can just
+                 * count EOS flags since V1 buffers cannot be compact.
+                 */
+                h.Size = h.HasEmpty ? (uint)1 : 0;
+                for (int node = 0; node < h.Tree.Count; node += 4)
+                {
+                    if ((h.Tree[node] & EOS) == EOS)
+                    {
+                        ++h.Size;
+                    }
+                }
+            }
+        }
+
+        protected static void DecodeV3(DecodedBuffer h, DataView view)
+        {
+            for (int b = BUFF_HEAD_SIZE; b < view.ByteLength; )
+            {
+                byte encoding = view.GetUInt8(b++);
+
+                // Decode code point.
+                byte cpbits = (byte)((encoding >>> 6) & 3);
+                if (cpbits == 0)
+                {
+                    h.Tree.Add(view.GetUInt32(b - 1) * 0xffffff);
+                    b += 3;
+                }
+                else if (cpbits == 1)
+                {
+                    ushort cp = view.GetUInt16(b);
+                    if ((cp & 0x8000) == 0)
+                    {
+                        h.Tree.Add(cp);
+                    }
+                    else
+                    {
+                        h.Tree.Add((uint)(cp & 0x7fff) | EOS);
+                    }
+                    b += 2;
+                }
+                else if (cpbits == 2)
+                {
+                    byte cp = view.GetUInt8(b++);
+                    if ((cp & 0x80) == 0)
+                    {
+                        h.Tree.Add(cp);
+                    }
+                    else
+                    {
+                        h.Tree.Add((uint)(cp & 0x7f) | EOS);
+                    }
+                }
+                else
+                {
+                    h.Tree.Add(0x65); // Letter "e"
+                }
+
+                // Decode branch pointers.
+                int branchShift = 4;
+                for (int branch = 1; branch <= 3; ++branch)
+                {
+                    byte branchBits = (byte)((encoding >>> branchShift) & 3);
+                    branchShift -= 2;
+
+                    if (branchBits == 0)
+                    {
+                        h.Tree.Add(view.GetUInt32(b) * 4);
+                        b += 4;
+                    }
+                    else if (branchBits == 1)
+                    {
+                        uint int24 = (uint)view.GetUInt8(b) << 16;
+                        int24 |= view.GetUInt16(b + 1);
+                        h.Tree.Add(int24 * 4);
+                        b += 3;
+                    }
+                    else if (branchBits == 2)
+                    {
+                        h.Tree.Add((uint)view.GetUInt16(b) * 4);
+                        b += 2;
+                    }
+                    else
+                    {
+                        h.Tree.Add(NUL);
+                    }
+                }
+            }
+        }
+
+        protected bool Delete(uint node, string s, uint i, char c)
         {
             if (node >= _tree.Count)
             {
                 return false;
             }
-            int treeChar = _tree[node] & CP_MASK;
+            uint treeChar = _tree[(int)node] & CP_MASK;
             if (c < treeChar)
             {
-                return Delete(_tree[node + 1], s, i, c);
+                return Delete(_tree[(int)node + 1], s, i, c);
             }
             else if (c > treeChar)
             {
-                return Delete(_tree[node + 3], s, i, c);
+                return Delete(_tree[(int)node + 3], s, i, c);
             }
             else
             {
-                i += c >= CP_MIN_SURROGATE ? 2 : 1;
+                i += c >= CP_MIN_SURROGATE ? (uint)2 : 1;
                 if (i >= s.Length)
                 {
-                    bool had = (_tree[node] & EOS) == EOS;
+                    bool had = (_tree[(int)node] & EOS) == EOS;
                     if (had)
                     {
-                        _tree[node] &= CP_MASK;
+                        _tree[(int)node] &= CP_MASK;
                         _size--;
                     }
                     return had;
                 }
                 else
                 {
-                    return Delete(_tree[node + 2], s, i, s[i]);
+                    return Delete(_tree[(int)node + 2], s, i, s[(int)i]);
                 }
             }
         }
 
-        protected void GetArrangementsOf(int node, IDictionary<int, int> availChars, StringBuilder sb, IList<string> matches)
+        protected static ArrayBuffer Encode(
+            uint size,
+            bool hasEmpty,
+            bool compact,
+            IList<uint> tree
+        )
+        {
+            ArrayBuffer buff = new(BUFF_HEAD_SIZE + 16 * tree.Count);
+            DataView view = new(buff);
+
+            // Header
+            // Header
+            //    - magic bytes "TT" for ternary tree.
+            view.SetUInt8(0, BUFF_MAGIC);
+            view.SetUInt8(1, BUFF_MAGIC);
+            //    - version number
+            view.SetUInt8(2, BUFF_VERSION);
+            //    - flag bits
+            byte treeFlags = (byte)(
+                (hasEmpty ? BF_HAS_EMPTY : 0) |
+                (compact ? BF_COMPACT : 0)
+            );
+            view.SetUInt8(3, treeFlags);
+            //    - set size
+            view.SetUInt32(4, (uint)size);
+
+            // Track buffer bytes used and offset of next write.
+            int blen = BUFF_HEAD_SIZE;
+
+            // Encode and write each node sequentially.
+            for (int n = 0; n < tree.Count; n += 4)
+            {
+                int encodingOffset = blen++;
+                byte encoding = 0;
+
+                // Write code point.
+                uint cp = tree[n] & CP_MASK;
+                bool eos = (tree[n] & EOS) != 0;
+                if (tree[n] == 0x65)
+                {
+                    // Letter "e".
+                    encoding = 3 << 6;
+                }
+                else if (cp > 0x7fff)
+                {
+                    view.SetUInt32(blen - 1, tree[n]);
+                    blen += 3;
+                }
+                else if (cp > 0x7f)
+                {
+                    encoding = 1 << 6;
+                    ushort i = (ushort)(cp | (eos ? 0x8000 : 0));
+                    view.SetUInt16(blen, i);
+                    blen += 2;
+                }
+                else
+                {
+                    encoding = 2 << 6;
+                    byte i = (byte)(cp | (eos ? 0x80 : 0));
+                    view.SetUInt8(blen++, i);
+                }
+
+                // Write branch pointers.
+                int branchShift = 4;
+                for (int branch = 1; branch <= 3; ++branch)
+                {
+                    uint pointer = tree[(int)n + branch];
+                    if (pointer == NUL)
+                    {
+                        encoding |= (byte)(3 << branchShift);
+                    }
+                    else
+                    {
+                        pointer /= 4;
+                        if (pointer > 0xffffff)
+                        {
+                            view.SetUInt32(blen, pointer);
+                            blen += 4;
+                        }
+                        else if (pointer > 0xffff)
+                        {
+                            encoding |= (byte)(1 << branchShift);
+                            view.SetUInt8(blen, (byte)(pointer >>> 16));
+                            view.SetUInt16(blen + 1, (ushort)(pointer & 0xffff));
+                            blen += 3;
+                        }
+                        else
+                        {
+                            encoding |= (byte)(2 << branchShift);
+                            view.SetUInt16(blen, (ushort)pointer);
+                            blen += 2;
+                        }
+                    }
+                    branchShift -= 2;
+                }
+                view.SetUInt8(encodingOffset, encoding);
+            }
+
+            // Return the buffer, trimmed to actual bytes used.
+            return blen < buff.ByteLength ?
+                buff.Slice(0, blen) :
+                buff;
+        }
+
+        protected void GetArrangementsOf(uint node, IDictionary<uint, uint> availChars, StringBuilder sb, IList<string> matches)
         {
             if (node >= _tree.Count)
             {
                 return;
             }
-            GetArrangementsOf(_tree[node + 1], availChars, sb, matches);
-            int c = _tree[node] & CP_MASK;
-            if (availChars.TryGetValue(c, out int value) && value > 0)
+            GetArrangementsOf(_tree[(int)node + 1], availChars, sb, matches);
+            uint c = _tree[(int)node] & CP_MASK;
+            if (availChars.TryGetValue(c, out uint value) && value > 0)
             {
                 availChars[c]--;
                 sb.Append((char)c);
-                if ((_tree[node] & EOS) == EOS)
+                if ((_tree[(int)node] & EOS) == EOS)
                 {
                     matches.Add(sb.ToString());
                 }
-                GetArrangementsOf(_tree[node + 2], availChars, sb, matches);
+                GetArrangementsOf(_tree[(int)node + 2], availChars, sb, matches);
                 sb.Remove(sb.Length - 1, 1);
                 availChars[c]++;
             }
-            GetArrangementsOf(_tree[node + 3], availChars, sb, matches);
+            GetArrangementsOf(_tree[(int)node + 3], availChars, sb, matches);
         }
 
-        protected IEnumerator<string> GetEnumerator(int node, IList<int> prefix)
+        protected IEnumerator<string> GetEnumerator(uint node, IList<uint> prefix)
         {
             if (node < _tree.Count)
             {
-                GetEnumerator(_tree[node + 1], prefix);
-                prefix.Add(_tree[node] & CP_MASK);
-                if ((_tree[node] & EOS) == EOS)
+                GetEnumerator(_tree[(int)node + 1], prefix);
+                prefix.Add(_tree[(int)node] & CP_MASK);
+                if ((_tree[(int)node] & EOS) == EOS)
                 {
                     yield return FastTernaryStringSet.FromCodePoints(prefix);
                 }
-                GetEnumerator(_tree[node + 2], prefix);
+                GetEnumerator(_tree[(int)node + 2], prefix);
                 prefix.RemoveAt(prefix.Count - 1);
-                GetEnumerator(_tree[node + 3], prefix);
+                GetEnumerator(_tree[(int)node + 3], prefix);
             }
         }
 
         protected void GetPartialMatches(
-            int node, string pattern, int i, char dc, IList<int> prefix, IList<string> matches)
+            uint node, string pattern, int i, char dc, IList<uint> prefix, IList<string> matches)
         {
             if (node >= _tree.Count) { return; }
 
             char cp = pattern[i];
-            int treeCp = _tree[node] & CP_MASK;
+            uint treeCp = _tree[(int)node] & CP_MASK;
             if (cp < treeCp || cp == dc)
             {
-                GetPartialMatches(_tree[node + 1], pattern, i, dc, prefix, matches);
+                GetPartialMatches(_tree[(int)node + 1], pattern, i, dc, prefix, matches);
             }
             if (cp == treeCp || cp == dc)
             {
@@ -1100,32 +1443,32 @@ namespace ftss
                 prefix.Add(treeCp);
                 if (i_ >= pattern.Length)
                 {
-                    if ((_tree[node] & EOS) == EOS)
+                    if ((_tree[(int)node] & EOS) == EOS)
                     {
                         matches.Add(FromCodePoints(prefix));
                     }
                 }
                 else
                 {
-                    GetPartialMatches(_tree[node + 2], pattern, i_, dc, prefix, matches);
+                    GetPartialMatches(_tree[(int)node + 2], pattern, i_, dc, prefix, matches);
                 }
                 prefix.RemoveAt(prefix.Count - 1);
             }
             if (cp > treeCp || cp == dc)
             {
-                GetPartialMatches(_tree[node + 3], pattern, i, dc, prefix, matches);
+                GetPartialMatches(_tree[(int)node + 3], pattern, i, dc, prefix, matches);
             }
         }
 
-        protected void GetWithinEditDistance(int node, IList<int> pat, int i, int dist, IList<int> prefix, FastTernaryStringSet o)
+        protected void GetWithinEditDistance(uint node, IList<uint> pat, int i, int dist, IList<uint> prefix, FastTernaryStringSet o)
         {
             if (node >= _tree.Count || dist < 0) { return; }
-            int treeCp = _tree[node] & CP_MASK;
-            int eos = _tree[node] & EOS;
+            uint treeCp = _tree[(int)node] & CP_MASK;
+            uint eos = _tree[(int)node] & EOS;
 
             if (i < pat.Count)
             {
-                int cp = pat[i];
+                uint cp = pat[i];
                 int i_ = i + 1;
                 int dist_ = dist - 1;
 
@@ -1140,8 +1483,8 @@ namespace ftss
                     {
                         o.AddCodePoints(0, prefix, 0);
                     }
-                    GetWithinEditDistance(_tree[node + 2], pat, i_, dist, prefix, o);
-                    prefix.Remove(prefix.Count - 1);
+                    GetWithinEditDistance(_tree[(int)node + 2], pat, i_, dist, prefix, o);
+                    prefix.RemoveAt(prefix.Count - 1);
                 }
                 else if (dist > 0)
                 {
@@ -1155,19 +1498,19 @@ namespace ftss
                         o.AddCodePoints(0, prefix, 0);
                     }
                     // Insert the tree's code point ahead of the pattern's.
-                    GetWithinEditDistance(_tree[node + 2], pat, i, dist_, prefix, o);
+                    GetWithinEditDistance(_tree[(int)node + 2], pat, i, dist_, prefix, o);
                     // Substitute the tree's code point with the pattern's
-                    GetWithinEditDistance(_tree[node + 2], pat, i_, dist_, prefix, o);
-                    prefix.Remove(prefix.Count - 1);
+                    GetWithinEditDistance(_tree[(int)node + 2], pat, i_, dist_, prefix, o);
+                    prefix.RemoveAt(prefix.Count - 1);
                 }
 
                 if (cp < treeCp || dist > 0)
                 {
-                    GetWithinEditDistance(_tree[node + 1], pat, i, dist, prefix, o);
+                    GetWithinEditDistance(_tree[(int)node + 1], pat, i, dist, prefix, o);
                 }
                 if (cp > treeCp || dist > 0)
                 {
-                    GetWithinEditDistance(_tree[node + 3], pat, i, dist, prefix, o);
+                    GetWithinEditDistance(_tree[(int)node + 3], pat, i, dist, prefix, o);
                 }
             }
             else if (dist > 0)
@@ -1177,26 +1520,26 @@ namespace ftss
                 {
                     o.AddCodePoints(0, prefix, 0);
                 }
-                GetWithinEditDistance(_tree[node + 2], pat, i, dist - 1, prefix, o);
-                prefix.Remove(prefix.Count - 1);
-                GetWithinEditDistance(_tree[node + 1], pat, i, dist, prefix, o);
-                GetWithinEditDistance(_tree[node + 3], pat, i, dist, prefix, o);
+                GetWithinEditDistance(_tree[(int)node + 2], pat, i, dist - 1, prefix, o);
+                prefix.RemoveAt(prefix.Count - 1);
+                GetWithinEditDistance(_tree[(int)node + 1], pat, i, dist, prefix, o);
+                GetWithinEditDistance(_tree[(int)node + 3], pat, i, dist, prefix, o);
             }
         }
 
-        protected void GetWithinHammingDistance(int node, string pat, int i, int dist, IList<int> prefix, IList<string> o)
+        protected void GetWithinHammingDistance(uint node, string pat, int i, int dist, IList<uint> prefix, IList<string> o)
         {
             if (node >= _tree.Count || dist < 0) { return; }
             if (i >= pat.Length) { return; }
             char cp = pat[i];
-            int treeCp = _tree[node] & CP_MASK;
+            uint treeCp = _tree[(int)node] & CP_MASK;
             if (cp < treeCp || dist > 0)
             {
-                GetWithinHammingDistance(_tree[node + 1], pat, i, dist, prefix, o);
+                GetWithinHammingDistance(_tree[(int)node + 1], pat, i, dist, prefix, o);
             }
 
             prefix.Add(treeCp);
-            if ((_tree[node] & EOS) == EOS && pat.Length == prefix.Count)
+            if ((_tree[(int)node] & EOS) == EOS && pat.Length == prefix.Count)
             {
                 if (dist > 0 || cp == treeCp)
                 {
@@ -1208,87 +1551,87 @@ namespace ftss
             {
                 int i_ = i + (cp >= CP_MIN_SURROGATE ? 2 : 1);
                 int dist_ = dist - (cp == treeCp ? 0 : 1);
-                GetWithinHammingDistance(_tree[node + 2], pat, i_, dist_, prefix, o);
+                GetWithinHammingDistance(_tree[(int)node + 2], pat, i_, dist_, prefix, o);
             }
             prefix.RemoveAt(prefix.Count - 1);
 
             if (cp > treeCp || dist > 0)
             {
-                GetWithinHammingDistance(_tree[node + 3], pat, i, dist, prefix, o);
+                GetWithinHammingDistance(_tree[(int)node + 3], pat, i, dist, prefix, o);
             }
         }
 
-        protected bool Has(int node, string s, int i, char c)
+        protected bool Has(uint node, string s, int i, char c)
         {
             _tree ??= [];
             if (node >= _tree.Count)
             {
                 return false;
             }
-            int treeChar = _tree[node] & CP_MASK;
+            uint treeChar = _tree[(int)node] & CP_MASK;
             if (c < treeChar)
             {
-                return Has(_tree[node + 1], s, i, c);
+                return Has(_tree[(int)node + 1], s, i, c);
             }
             else if (c > treeChar)
             {
-                return Has(_tree[node + 3], s, i, c);
+                return Has(_tree[(int)node + 3], s, i, c);
             }
             else
             {
                 i += c >= CP_MIN_SURROGATE ? 2 : 1;
                 if (i >= s.Length)
                 {
-                    return (_tree[node] & EOS) == EOS;
+                    return (_tree[(int)node] & EOS) == EOS;
                 }
                 else
                 {
-                    return this.Has(_tree[node + 2], s, i, s[i]);
+                    return this.Has(_tree[(int)node + 2], s, i, s[i]);
                 }
             }
         }
 
-        protected int HasCodePoints(int node, IList<int> s, int i)
+        protected uint HasCodePoints(uint node, IList<uint> s, int i)
         {
             if (node >= _tree.Count)
             {
-                return -node - 1;
+                return uint.MaxValue - node;
             }
-            int codepoint = s[i];
-            int treeCodepoint = _tree[node] & CP_MASK;
+            uint codepoint = s[i];
+            uint treeCodepoint = _tree[(int)node] & CP_MASK;
             if (codepoint < treeCodepoint)
             {
-                return HasCodePoints(_tree[node + 1], s, i);
+                return HasCodePoints(_tree[(int)node + 1], s, i);
             }
             else if (codepoint > treeCodepoint)
             {
-                return HasCodePoints(_tree[node + 3], s, i);
+                return HasCodePoints(_tree[(int)node + 3], s, i);
             }
             else
             {
                 if (++i >= s.Count)
                 {
-                    return (_tree[node] & EOS) == EOS ? node : -node - 1;
+                    return (_tree[(int)node] & EOS) == EOS ? node : uint.MaxValue - node;
                 }
                 else
                 {
-                    return HasCodePoints(_tree[node + 2], s, i);
+                    return HasCodePoints(_tree[(int)node + 2], s, i);
                 }
             }
         }
 
-        protected void VisitCodePoints(int node, IList<int> prefix, Action<IList<int>, int> visitFn)
+        protected void VisitCodePoints(uint node, IList<uint> prefix, Action<IList<uint>, uint> visitFn)
         {
             if (node >= _tree.Count) { return; }
-            VisitCodePoints(_tree[node + 1], prefix, visitFn);
-            prefix.Add(_tree[node] & CP_MASK);
-            if ((_tree[node] & EOS) == EOS)
+            VisitCodePoints(_tree[(int)node + 1], prefix, visitFn);
+            prefix.Add(_tree[(int)node] & CP_MASK);
+            if ((_tree[(int)node] & EOS) == EOS)
             {
                 visitFn(prefix, node);
             }
-            VisitCodePoints(_tree[node + 2], prefix, visitFn);
+            VisitCodePoints(_tree[(int)node + 2], prefix, visitFn);
             prefix.RemoveAt(prefix.Count - 1);
-            VisitCodePoints(_tree[node + 3], prefix, visitFn);
+            VisitCodePoints(_tree[(int)node + 3], prefix, visitFn);
         }
 
         IEnumerator IEnumerable.GetEnumerator()

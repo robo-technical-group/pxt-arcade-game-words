@@ -18,10 +18,10 @@ namespace ftss_tests
             test.Add(string.Empty);
             test.Add("horse");
             // Act & Assert
-            Assert.AreEqual(2, test.Size, "Test A");
+            Assert.AreEqual((uint)2, test.Size, "Test A");
             Assert.IsTrue(test.Has(""), "Test B");
             test.Delete("");
-            Assert.AreEqual(1, test.Size, "Test C");
+            Assert.AreEqual((uint)1, test.Size, "Test C");
             Assert.IsFalse(test.Has(""), "Test D");
         }
 
@@ -31,12 +31,12 @@ namespace ftss_tests
             // Arrange
             FastTernaryStringSet test = [];
             // Act & Assert
-            Assert.AreEqual(0, test.Size, "Test A");
+            Assert.AreEqual((uint)0, test.Size, "Test A");
             test.Add("dog");
-            Assert.AreEqual(1, test.Size, "Test B");
+            Assert.AreEqual((uint)1, test.Size, "Test B");
             Assert.IsFalse(test.Has("cat"), "Test C");
             Assert.IsFalse(test.Delete("cat"), "Test D");
-            Assert.AreEqual(1, test.Size, "Test E");
+            Assert.AreEqual((uint)1, test.Size, "Test E");
         }
 
         [TestMethod]
@@ -45,20 +45,20 @@ namespace ftss_tests
             // Arrange
             FastTernaryStringSet test = [];
             // Act & Assert
-            Assert.AreEqual(0, test.Size, "Test A");
+            Assert.AreEqual((uint)0, test.Size, "Test A");
             test.Add("dog");
-            Assert.AreEqual(1, test.Size, "Test B");
+            Assert.AreEqual((uint)1, test.Size, "Test B");
             Assert.IsTrue(test.Has("dog"), "Test C");
             Assert.IsTrue(test.Delete("dog"), "Test D");
-            Assert.AreEqual(0, test.Size, "Test E");
+            Assert.AreEqual((uint)0, test.Size, "Test E");
         }
 
         [TestMethod]
-        public void DeleteReturnValue()
+        public async Task DeleteReturnValue()
         {
             // Arrange
             FastTernaryStringSet test = [];
-            string[] lines = TestFiles.short_english_list
+            string[] lines = (await Common.GetResourceFileContents("short-english-list.txt"))
                 .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             test.AddAll(lines);
 
@@ -67,7 +67,7 @@ namespace ftss_tests
             {
                 Assert.IsTrue(test.Delete(line), $"Test A word {line}.");
             }
-            Assert.AreEqual(0, test.Size, "Test B");
+            Assert.AreEqual((uint)0, test.Size, "Test B");
             Assert.IsFalse(test.Delete(string.Empty), "Test C");
             test.Add(string.Empty);
             Assert.IsFalse(test.Delete("cat"), "Test D");
@@ -76,11 +76,11 @@ namespace ftss_tests
         }
 
         [TestMethod]
-        public void DeleteShuffled()
+        public async Task DeleteShuffled()
         {
             // Arrange
             FastTernaryStringSet test = [];
-            string[] lines = TestFiles.short_english_list
+            string[] lines = (await Common.GetResourceFileContents("short-english-list.txt"))
                 .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             test.AddAll(lines);
             Random r = new();
@@ -95,7 +95,7 @@ namespace ftss_tests
                     lines[swapIndex] = temp;
                 }
             }
-            int size = test.Size;
+            uint size = test.Size;
             int count = 0;
 
             // Act & Assert
@@ -108,18 +108,18 @@ namespace ftss_tests
                 Assert.IsFalse(test.Has(line), $"Test D word {line} count {count}");
                 count++;
             }
-            Assert.AreEqual(0, test.Size, "Test E");
+            Assert.AreEqual((uint)0, test.Size, "Test E");
         }
 
         [TestMethod]
-        public void DeleteAllTest()
+        public async Task DeleteAllTest()
         {
             // Arrange
             FastTernaryStringSet test = [];
-            string[] lines = TestFiles.short_english_list
+            string[] lines = (await Common.GetResourceFileContents("short-english-list.txt"))
                 .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             test.AddAll(lines);
-            int size = test.Size;
+            uint size = test.Size;
 
             // Act & Assert
             test.DeleteAll(null);
@@ -139,20 +139,20 @@ namespace ftss_tests
         }
 
         [TestMethod]
-        public void DeleteAllReturn()
+        public async Task DeleteAllReturn()
         {
             // Arrange
             FastTernaryStringSet test = [];
-            string[] lines = TestFiles.short_english_list
+            string[] lines = (await Common.GetResourceFileContents("short-english-list.txt"))
                 .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             test.AddAll(lines);
 
             // Act & Assert
-            Assert.AreEqual(lines.Length, test.Size, "Test A");
+            Assert.AreEqual((uint)lines.Length, test.Size, "Test A");
             Assert.IsTrue(test.DeleteAll(lines), "Test B");
-            Assert.AreEqual(0, test.Size, "Test C");
+            Assert.AreEqual((uint)0, test.Size, "Test C");
             test.AddAll(["fish", "gerbil", "pigeon",]);
-            Assert.AreEqual(3, test.Size, "Test D");
+            Assert.AreEqual((uint)3, test.Size, "Test D");
             Assert.IsFalse(test.DeleteAll(["gerbil", "mongoose", "pigeon",]), "Test E");
             test.AddAll(["fish", "gerbil", "pigeon",]);
             Assert.IsFalse(test.DeleteAll(["mongoose", "gerbil", "pigeon",]), "Test F");

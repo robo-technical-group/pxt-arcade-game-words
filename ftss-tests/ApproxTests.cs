@@ -150,11 +150,11 @@ namespace ftss_tests
         }
 
         [TestMethod]
-        public void GetCompletionsAgainstWordList()
+        public async Task GetCompletionsAgainstWordList()
         {
             // Arrange
             FastTernaryStringSet test = [];
-            string[] lines = TestFiles.short_english_list
+            string[] lines = (await Common.GetResourceFileContents("short-english-list.txt"))
                 .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             test.AddAll(lines);
 
@@ -222,11 +222,11 @@ namespace ftss_tests
         }
 
         [TestMethod]
-        public void GetCompletedAgainstWordList()
+        public async Task GetCompletedAgainstWordList()
         {
             // Arrange
             FastTernaryStringSet test = [];
-            string[] lines = TestFiles.short_english_list
+            string[] lines = (await Common.GetResourceFileContents("short-english-list.txt"))
                 .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             test.AddAll(lines);
 
@@ -283,11 +283,11 @@ namespace ftss_tests
         }
 
         [TestMethod]
-        public void GetPartialsWordList()
+        public async Task GetPartialsWordList()
         {
             // Arrange
             FastTernaryStringSet test = [];
-            string[] lines = TestFiles.short_english_list
+            string[] lines = (await Common.GetResourceFileContents("short-english-list.txt"))
                 .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             test.AddAll(lines);
 
@@ -431,11 +431,11 @@ namespace ftss_tests
         }
 
         [TestMethod]
-        public void GetHammingCats()
+        public async Task GetHammingCats()
         {
             // Arrange
             FastTernaryStringSet test = [];
-            string[] lines = TestFiles.short_english_list
+            string[] lines = (await Common.GetResourceFileContents("short-english-list.txt"))
                 .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             test.AddAll(lines);
             IList<string> match1 = lines.Where(s => Regex.IsMatch(s, @"^.at$") ||

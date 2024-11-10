@@ -15,8 +15,8 @@ namespace ftss_tests
             // Act
             test.Add(String.Empty);
             // Assert
-            int size = test.Size;
-            Assert.AreEqual(1, size);
+            uint size = test.Size;
+            Assert.AreEqual<uint>(1, size);
             bool has = test.Has(String.Empty);
             Assert.IsTrue(has);
             has = test.Has("c");
@@ -82,7 +82,7 @@ namespace ftss_tests
             {
                 Assert.IsTrue(test.Has(s), $"Test ${s} failed after all adds.");
             }
-            Assert.AreEqual(words.Length, test.Size, "Size test failed.");
+            Assert.AreEqual<uint>((uint)words.Length, test.Size, "Size test failed.");
         }
 
         [TestMethod]
@@ -101,7 +101,7 @@ namespace ftss_tests
             {
                 FastTernaryStringSet test = [];
                 test.AddAll(t);
-                Assert.AreEqual(t.Length, test.Size, $"Size test failed for size ${t.Length}");
+                Assert.AreEqual<uint>((uint)t.Length, test.Size, $"Size test failed for size ${t.Length}");
                 foreach (string s in t)
                 {
                     Assert.IsTrue(test.Has(s), $"Search test for ${s} with size ${t.Length} failed.");
@@ -127,20 +127,20 @@ namespace ftss_tests
             // Act
             test.AddAll(words);
             // Assert
-            Assert.AreEqual(3, test.Size);
+            Assert.AreEqual((uint)3, test.Size);
         }
 
         [TestMethod]
-        public void AddFromShortEnglishFile()
+        public async Task AddFromShortEnglishFile()
         {
             // Arrange
             FastTernaryStringSet test = [];
-            string[] lines = TestFiles.short_english_list
+            string[] lines = (await Common.GetResourceFileContents("short-english-list.txt"))
                 .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             // Act
             test.AddAll(lines);
             // Assert
-            Assert.AreEqual(lines.Length, test.Size, "Size mismatch.");
+            Assert.AreEqual((uint)lines.Length, test.Size, "Size mismatch.");
             foreach (string line in lines)
             {
                 Assert.IsTrue(test.Has(line), $"Word ${line} not found.");
@@ -168,7 +168,7 @@ namespace ftss_tests
             test.AddAll(words);
             // Assert
             Assert.IsTrue(test.Size > 0, "Size is zero?");
-            Assert.AreEqual(words.Length, test.Size, "Size mismatch.");
+            Assert.AreEqual((uint)words.Length, test.Size, "Size mismatch.");
         }
 
         [TestMethod]
@@ -178,20 +178,20 @@ namespace ftss_tests
             FastTernaryStringSet test = [];
             // Act & Assert
             test.AddAll([]);
-            Assert.AreEqual(0, test.Size, "Test A");
+            Assert.AreEqual<uint>(0, test.Size, "Test A");
             test.AddAll(["mongoose",]);
-            Assert.AreEqual(1, test.Size, "Test B");
+            Assert.AreEqual<uint>(1, test.Size, "Test B");
             test.AddAll(["badger", "pelican",], 0, 2);
-            Assert.AreEqual(3, test.Size, "Test C");
+            Assert.AreEqual<uint>(3, test.Size, "Test C");
             test.AddAll(["asp", "mouse", "oyster",], 1, 3);
-            Assert.AreEqual(5, test.Size, "Test D");
+            Assert.AreEqual<uint>(5, test.Size, "Test D");
             Assert.IsFalse(test.Has("asp"), "Test E");
             test.AddAll(["barracuda", "cricket", "panda", "tiger",], 0, 2);
-            Assert.AreEqual(7, test.Size, "Test F");
+            Assert.AreEqual<uint>(7, test.Size, "Test F");
             Assert.IsTrue(test.Has("barracuda") && test.Has("cricket"), "Test G");
             Assert.IsFalse(test.Has("panda") && test.Has("tiger"), "Test H");
             test.AddAll(["bison", "caribou", "deer", "elk", "moose",], 1);
-            Assert.AreEqual(11, test.Size, "Test I");
+            Assert.AreEqual<uint>(11, test.Size, "Test I");
             Assert.IsFalse(test.Has("bison"), "Test J");
             Assert.IsTrue(test.Has("caribou") && test.Has("moose"), "Test K");
         }

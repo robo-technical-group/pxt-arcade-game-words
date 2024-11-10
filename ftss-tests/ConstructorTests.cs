@@ -12,8 +12,8 @@ namespace ftss_tests
             // Act
             FastTernaryStringSet test = [];
             // Assert
-            int size = test.Size;
-            Assert.AreEqual(0, size);
+            uint size = test.Size;
+            Assert.AreEqual((uint)0, size);
         }
 
         [TestMethod]
@@ -23,8 +23,8 @@ namespace ftss_tests
             // Act
             FastTernaryStringSet test = new((string[])[]);
             // Assert
-            int size = test.Size;
-            Assert.AreEqual(0, size);
+            uint size = test.Size;
+            Assert.AreEqual((uint)0, size);
         }
     }
 }

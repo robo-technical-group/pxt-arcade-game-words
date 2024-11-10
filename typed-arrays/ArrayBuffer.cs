@@ -39,6 +39,7 @@
 namespace typed_arrays;
 public class ArrayBuffer
 {
+    protected readonly int B64_PARTITION_SIZE = 80;
     protected int _byteLength;
     protected IList<uint> _bytes;
 
@@ -85,6 +86,13 @@ public class ArrayBuffer
         targetArray.Set(sourceArray);
 
         return target;
+    }
+
+    public IEnumerable<string> ToBase64StringSet()
+    {
+        TypedArray<byte> array = new(this);
+        string r = Convert.ToBase64String(array.ToArray());
+        return r.Partition(B64_PARTITION_SIZE);
     }
 
     public IList<uint> ToList() { return [.. _bytes]; }

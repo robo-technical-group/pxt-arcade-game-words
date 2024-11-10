@@ -16,11 +16,11 @@ namespace ftss_tests
             // Arrange
             FastTernaryStringSet test = [];
             // Act & Assert
-            Assert.AreEqual(0, test.Size, "Test A");
+            Assert.AreEqual((uint)0, test.Size, "Test A");
             test.Add("peach");
-            Assert.AreEqual(1, test.Size, "Test B");
+            Assert.AreEqual((uint)1, test.Size, "Test B");
             test.Add("peach");
-            Assert.AreEqual(1, test.Size, "Test C");
+            Assert.AreEqual((uint)1, test.Size, "Test C");
         }
 
         [TestMethod]
@@ -29,13 +29,13 @@ namespace ftss_tests
             // Arrange
             FastTernaryStringSet test = [];
             // Act & Assert
-            Assert.AreEqual(0, test.Size, "Test A");
+            Assert.AreEqual((uint)0, test.Size, "Test A");
             test.Add("peach");
-            Assert.AreEqual(1, test.Size, "Test B");
+            Assert.AreEqual((uint)1, test.Size, "Test B");
             test.Delete("peach");
-            Assert.AreEqual(0, test.Size, "Test C");
+            Assert.AreEqual((uint)0, test.Size, "Test C");
             test.Delete("peach");
-            Assert.AreEqual(0, test.Size, "Test D");
+            Assert.AreEqual((uint)0, test.Size, "Test D");
         }
 
         [TestMethod]
@@ -44,19 +44,19 @@ namespace ftss_tests
             // Arrange
             FastTernaryStringSet test = [];
             // Act & Assert
-            Assert.AreEqual(0, test.Size, "Test A");
+            Assert.AreEqual((uint)0, test.Size, "Test A");
             test.Add(string.Empty);
-            Assert.AreEqual(1, test.Size, "Test B");
+            Assert.AreEqual((uint)1, test.Size, "Test B");
             test.Add("");
-            Assert.AreEqual(1, test.Size, "Test C");
+            Assert.AreEqual((uint)1, test.Size, "Test C");
             test.Delete("");
-            Assert.AreEqual(0, test.Size, "Test D");
+            Assert.AreEqual((uint)0, test.Size, "Test D");
             test.Delete(string.Empty);
-            Assert.AreEqual(0, test.Size, "Test E");
+            Assert.AreEqual((uint)0, test.Size, "Test E");
             test.Add("");
-            Assert.AreEqual(1, test.Size, "Test F");
+            Assert.AreEqual((uint)1, test.Size, "Test F");
             test.Add("whale");
-            Assert.AreEqual(2, test.Size, "Test G");
+            Assert.AreEqual((uint)2, test.Size, "Test G");
         }
     }
 }

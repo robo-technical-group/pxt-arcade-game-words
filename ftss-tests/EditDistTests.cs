@@ -134,8 +134,8 @@ namespace ftss_tests
             CollectionAssert.AreEquivalent(new string[] { "a", "ab", "b", }, (List<string>)test.GetWithinEditDistanceOf("", 2), "Test C");
             CollectionAssert.AreEquivalent(new string[] { "a", "ab", "abc", "b", }, (List<string>)test.GetWithinEditDistanceOf("", 3), "Test D");
 
-            CollectionAssert.AreEquivalent(new string[] { "a", }, (List<string>)test.GetWithinEditDistanceOf("a", 1), "Test E");
-            CollectionAssert.AreEquivalent(new string[] { "a", "ab", "b", }, (List<string>)test.GetWithinEditDistanceOf("a", 2), "Test F");
+            CollectionAssert.AreEquivalent(new string[] { "a", }, (List<string>)test.GetWithinEditDistanceOf("a", 0), "Test E");
+            CollectionAssert.AreEquivalent(new string[] { "a", "ab", "b", }, (List<string>)test.GetWithinEditDistanceOf("a", 1), "Test F");
 
             test.Clear();
             test.AddAll(["ab", "abc", "abcd"]);
@@ -279,7 +279,7 @@ namespace ftss_tests
         }
 
         [TestMethod]
-        public void EditDists()
+        public async Task EditDists()
         {
             // Arrange
             (string, int)[] tests = [
@@ -311,7 +311,7 @@ namespace ftss_tests
                 ("", 24),
             ];
             FastTernaryStringSet test = [];
-            string[] lines = TestFiles.short_english_list
+            string[] lines = (await Common.GetResourceFileContents("short-english-list.txt"))
                 .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             test.AddAll(lines);
 

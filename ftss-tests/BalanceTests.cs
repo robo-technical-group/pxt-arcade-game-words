@@ -6,11 +6,11 @@ namespace ftss_tests
     public class BalanceTests
     {
         [TestMethod]
-        public void BalanceBadStructure()
+        public async Task BalanceBadStructure()
         {
             // Arrange
             FastTernaryStringSet test = [];
-            string[] lines = TestFiles.short_english_list
+            string[] lines = (await Common.GetResourceFileContents("short-english-list.txt"))
                 .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             // Add words in worst possible order
             foreach(string line in lines)
@@ -67,10 +67,10 @@ namespace ftss_tests
             try
             {
                 test.Balance();
-                Assert.AreEqual(0, test.Size);
+                Assert.AreEqual<uint>(0, test.Size);
                 test.Add(string.Empty);
                 test.Balance();
-                Assert.AreEqual(1, test.Size);
+                Assert.AreEqual((uint)1, test.Size);
             }
             catch (Exception ex)
             {
