@@ -1,7 +1,5 @@
-﻿namespace BloomFilters
+﻿namespace BloomFilters;
+public class BloomFilter
 {
-    public class BloomFilter
-    {
 
-    }
 }
