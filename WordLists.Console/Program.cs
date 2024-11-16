@@ -117,7 +117,8 @@ string? GetOutputFile()
         try
         {
             Directory.CreateDirectory(dir);
-        } finally { }
+        }
+        finally { }
         if (!Directory.Exists(dir))
         {
             Console.WriteLine($"Cannot create output directory {dir}; aborting.");

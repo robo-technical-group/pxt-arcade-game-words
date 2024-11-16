@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace GameWords.Console;
+namespace WordLists.Console;
 internal static class Common
 {
     // https://adamprescott.net/2012/07/26/files-as-embedded-resources-in-unit-tests/
