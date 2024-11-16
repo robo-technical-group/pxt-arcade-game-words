@@ -1,4 +1,3 @@
-using NuGet.Frameworks;
 using typed_arrays;
 
 namespace ta_tests

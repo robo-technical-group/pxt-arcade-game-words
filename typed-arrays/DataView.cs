@@ -36,7 +36,6 @@
 //  * Gradually migrating structure from Khronos spec to ES2015 spec
 //  * slice() implemention from https://github.com/ttaubert/node-arraybuffer-slice/
 //  * Base64 conversions from https://github.com/rrhett/typescript-base64-arraybuffer
-using System.Data.SqlTypes;
 using System.Numerics;
 
 namespace typed_arrays;
@@ -66,7 +65,8 @@ public class DataView
 
         if ((byteOffset + byteLength) > buffer.ByteLength)
         {
-            throw new ArgumentOutOfRangeException(nameof(byteOffset), "byteOffset and length reference an area beyond the end of the buffer.");
+            throw new ArgumentOutOfRangeException(nameof(byteOffset), 
+                "byteOffset and length reference an area beyond the end of the buffer.");
         }
 
         _buffer = buffer;

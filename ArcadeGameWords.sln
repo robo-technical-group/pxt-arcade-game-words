@@ -9,8 +9,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OldConsoleApps", "OldConsol
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ftss", "ftss\ftss.csproj", "{B4DD2706-6AE5-4DF1-85B8-21C2A5A9E45E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ftss-demo", "ftss-demo\ftss-demo.csproj", "{540315AD-BAA6-4C58-B965-CFA14B03CBB1}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ftss-tests", "ftss-tests\ftss-tests.csproj", "{877DFA65-6DEF-4A42-B18C-142FD673F5E8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NAryDict", "NAryDict\NAryDict.csproj", "{DC392218-DBC1-4871-A87D-A922D877DE84}"
@@ -41,10 +39,6 @@ Global
 		{B4DD2706-6AE5-4DF1-85B8-21C2A5A9E45E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4DD2706-6AE5-4DF1-85B8-21C2A5A9E45E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B4DD2706-6AE5-4DF1-85B8-21C2A5A9E45E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{540315AD-BAA6-4C58-B965-CFA14B03CBB1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{540315AD-BAA6-4C58-B965-CFA14B03CBB1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{540315AD-BAA6-4C58-B965-CFA14B03CBB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{540315AD-BAA6-4C58-B965-CFA14B03CBB1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{877DFA65-6DEF-4A42-B18C-142FD673F5E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{877DFA65-6DEF-4A42-B18C-142FD673F5E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{877DFA65-6DEF-4A42-B18C-142FD673F5E8}.Release|Any CPU.ActiveCfg = Release|Any CPU

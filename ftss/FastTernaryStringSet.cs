@@ -1,10 +1,8 @@
 ﻿using NAryDict;
 using System.Collections;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using typed_arrays;
-// using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ftss
 {
@@ -1011,8 +1009,6 @@ namespace ftss
             // Otherwise, assign it the next available slot and return that.
             Func<uint, uint> mapping = new((i) =>
             {
-                // slot = nodeMap[value][ltPointer][eqPointer][gtPointer]
-                // Debug.WriteLine($"i = {i}, tree.length = {tree.Count}");
                 uint[] val = new uint[4];
                 if (i >= tree.Count - 3)
                 {
@@ -1056,7 +1052,6 @@ namespace ftss
             }
 
             // Check if tree would shrink before bothering to rewrite it.
-            // Debug.WriteLine($"nextslot = {nextSlot}");
             if (nextSlot == tree.Count)
             {
                 return tree;
@@ -1067,7 +1062,6 @@ namespace ftss
             for (uint i = 0; i < tree.Count; i += 4)
             {
                 uint slot = mapping(i);
-                // Debug.WriteLine($"i = {i} slot = {slot}");
 
                 // If the unique version of the node hasn't been written yet,
                 // then append it to the output array.
@@ -1359,14 +1353,14 @@ namespace ftss
                 else if (cp > 0x7f)
                 {
                     encoding = 1 << 6;
-                    ushort i = (ushort)(cp | (eos ? 0x8000 : 0));
+                    ushort i = (ushort)(cp | (eos ? (ushort)0x8000 : (ushort)0));
                     view.SetUInt16(blen, i);
                     blen += 2;
                 }
                 else
                 {
                     encoding = 2 << 6;
-                    byte i = (byte)(cp | (eos ? 0x80 : 0));
+                    byte i = (byte)(cp | (eos ? (byte)0x80 : (byte)0));
                     view.SetUInt8(blen++, i);
                 }
 

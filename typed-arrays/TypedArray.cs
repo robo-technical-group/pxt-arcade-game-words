@@ -36,7 +36,6 @@
 //  * Gradually migrating structure from Khronos spec to ES2015 spec
 //  * slice() implemention from https://github.com/ttaubert/node-arraybuffer-slice/
 //  * Base64 conversions from https://github.com/rrhett/typescript-base64-arraybuffer
-using System.Diagnostics;
 using System.Numerics;
 namespace typed_arrays;
 public class TypedArray<T> : IEnumerable<T> where T : IBinaryInteger<T>
@@ -114,7 +113,6 @@ public class TypedArray<T> : IEnumerable<T> where T : IBinaryInteger<T>
     public static TypedArray<T> FromBase64StringSet(IEnumerable<string> strings)
     {
         string s = String.Join(string.Empty, strings);
-        // Debug.WriteLine(s);
         TypedArray<byte> b = new(Convert.FromBase64String(s));
         return FromTypedArray(b);
     }
