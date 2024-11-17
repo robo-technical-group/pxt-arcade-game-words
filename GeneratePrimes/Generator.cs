@@ -9,7 +9,7 @@ internal class Generator
     protected readonly static string OUT_DIR =
         Environment.SpecialFolder.LocalApplicationData.ToString();
     protected const string OUT_FILE_NAME = "primes.txt";
-    protected const int SEARCH_INTERVAL = 100_000_000;
+    protected const int SEARCH_INTERVAL = 1_000_000_000;
     protected readonly static string OUT_FILE = Path.Combine(OUT_DIR, OUT_FILE_NAME);
 
     protected BitArray _bits;
