@@ -130,9 +130,9 @@ namespace WordLists.Wpf
 
         }
 
-        private void Build_Click(object sender, RoutedEventArgs e)
+        private async void Build_Click(object sender, RoutedEventArgs e)
         {
-            Build();
+            await Build();
         }
     }
 }
