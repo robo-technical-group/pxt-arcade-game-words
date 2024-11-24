@@ -17,7 +17,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Vertical" Grid.Row="0" Grid.Column="0">
+        <StackPanel Name="FilesPanel" Orientation="Vertical" Grid.Row="0" Grid.Column="0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -39,11 +39,12 @@
                 </Grid.ColumnDefinitions>
                 <Label Grid.Column="0" VerticalAlignment="Center">Exclusion lists</Label>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1">
-                    <Button>Add file</Button>
-                    <Button>Remove file</Button>
+                    <Button Name="AddExclusionButton" Click="AddExclusion_Click">Add file</Button>
+                    <Button Name="RemoveExclusionButton" Click="RemoveExclusion_Click">Remove file</Button>
                 </StackPanel>
             </Grid>
-            <ListBox Height="100"></ListBox>
+            <ListBox Name="ExclusionListBox" ItemsSource="{Binding ExclusionFiles}" Height="100"></ListBox>
         </StackPanel>
+        <Button Name="BuildButton" Click="Build_Click" Grid.Row="1" Grid.Column="1">Build</Button>
     </Grid>
 </Window>

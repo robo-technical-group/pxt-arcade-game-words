@@ -16,4 +16,9 @@
     <Folder Include="Properties\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\BloomFilters\BloomFilters.csproj" />
+    <ProjectReference Include="..\ftss\ftss.csproj" />
+  </ItemGroup>
+
 </Project>
