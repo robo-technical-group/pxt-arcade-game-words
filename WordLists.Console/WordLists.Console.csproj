@@ -5,10 +5,22 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RootNamespace>WordLists.Console</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\GW20P.txt" />
+    <None Remove="Resources\LNOOBW_en.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BloomFilters\BloomFilters.csproj" />
     <ProjectReference Include="..\ftss\ftss.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\GW20P.txt" />
+    <EmbeddedResource Include="Resources\LNOOBW_en.txt" />
   </ItemGroup>
 
 </Project>

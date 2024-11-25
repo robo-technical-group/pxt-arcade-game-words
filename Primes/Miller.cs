@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Numerics;
+﻿using System.Numerics;
 using System.Text.RegularExpressions;
 namespace Primes;
 
@@ -12,6 +11,7 @@ public static class Miller
         List<int> AValues
     );
 
+    private static int[] SMALL_PRIMES = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97,];
     public static readonly BigInteger MAX_PRIME =
         BigInteger.Parse("3_317_044_064_679_887_385_961_981".Replace("_", ""));
 
@@ -45,7 +45,16 @@ public static class Miller
         LoadAValues(ref p);
         if (p.AValues is null)
         {
-            throw new ArgumentOutOfRangeException(nameof(n));
+            // Go the long route.
+            p.AValues = [];
+            BigInteger maxA = BigInteger.Min(n - 2, 2 * BigInteger.Pow(BigInteger.Log2(n), 2));
+            foreach (int a in SMALL_PRIMES)
+            {
+                if (a <= maxA)
+                {
+                    p.AValues.Add(a);
+                }
+            }
         }
         return IsPrime(p);
     }

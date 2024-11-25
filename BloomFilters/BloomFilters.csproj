@@ -1,19 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
   <ItemGroup>
     <None Remove="Resources\GW20P.txt" />
     <None Remove="Resources\LNOOBW_en.txt" />
   </ItemGroup>
-
   <ItemGroup>
     <EmbeddedResource Include="Resources\GW20P.txt" />
     <EmbeddedResource Include="Resources\LNOOBW_en.txt" />
   </ItemGroup>
-
+  <ItemGroup>
+    <ProjectReference Include="..\Primes\Primes.csproj" />
+  </ItemGroup>
 </Project>

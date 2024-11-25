@@ -2,6 +2,7 @@
 using ftss;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -83,7 +84,7 @@ namespace WordLists.Wpf
                     }
                 }
 
-                BloomFilter filter = new();
+                WordLookup filter = new();
                 FastTernaryStringSet wordset = [];
 
                 foreach (string wordFile in  WordFiles)
