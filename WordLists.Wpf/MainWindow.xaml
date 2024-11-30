@@ -39,11 +39,24 @@
                 </Grid.ColumnDefinitions>
                 <Label Grid.Column="0" VerticalAlignment="Center">Exclusion lists</Label>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1">
+                    <CheckBox Name="WordStemCheckBox">Treat as word stems (slower)</CheckBox>
                     <Button Name="AddExclusionButton" Click="AddExclusion_Click">Add file</Button>
                     <Button Name="RemoveExclusionButton" Click="RemoveExclusion_Click">Remove file</Button>
                 </StackPanel>
             </Grid>
             <ListBox Name="ExclusionListBox" ItemsSource="{Binding ExclusionFiles}" Height="100"></ListBox>
+        </StackPanel>
+        <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="0">
+            <StackPanel Orientation="Horizontal">
+                <CheckBox Name="BloomCheckBox">Include Bloom Filter</CheckBox>
+                <Label>Block name</Label>
+                <TextBox Name="BloomNameTextBox" Width="100"></TextBox>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <CheckBox Name="FtssCheckBox">Include Ternary String Set</CheckBox>
+                <Label>Block name</Label>
+                <TextBox Name="FtssNameTextBox" Width="100"></TextBox>
+            </StackPanel>
         </StackPanel>
         <Button Name="BuildButton" Click="Build_Click" Grid.Row="1" Grid.Column="1">Build</Button>
     </Grid>

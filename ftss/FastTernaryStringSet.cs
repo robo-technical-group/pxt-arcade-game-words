@@ -75,6 +75,10 @@ namespace ftss
         protected bool _compact;
         /// <summary>Tracks set size.</summary>
         protected uint _size;
+        /// <summary>Forces words to lowercase when adding and searching.</summary>
+        protected bool _forceLower = false;
+        /// <summary>Forces words to uppercase when adding and searching.</summary>
+        protected bool _forceUpper = false;
 
         /**
          * <summary>
@@ -154,6 +158,18 @@ namespace ftss
 
         public bool Compacted { get { return _compact; } }
 
+        public bool ForceLowercase
+        {
+            get { return _forceLower; }
+            set { _forceLower = value; }
+        }
+
+        public bool ForceUppercase
+        {
+            get { return _forceUpper; }
+            set { _forceUpper = value; }
+        }
+
         public IList<string> Keys { get { return ToList(); } }
 
         public uint Size { get { return _size; } }
@@ -232,6 +248,8 @@ namespace ftss
             }
             else
             {
+                if (_forceLower) { s = s.ToLower(); }
+                if (_forceUpper) { s = s.ToUpper(); }
                 if (_compact && !Has(s))
                 {
                     this.Decompact();
@@ -407,7 +425,8 @@ namespace ftss
                 }
                 return had;
             }
-
+            if (_forceLower) { s = s.ToLower(); }
+            if (_forceUpper) { s = s.ToUpper(); }
             if (_compact && Has(s))
             {
                 Decompact();
@@ -509,6 +528,8 @@ namespace ftss
         {
             ArgumentNullException.ThrowIfNull(pattern);
             Dictionary<uint, uint> availChars = [];
+            if (_forceLower) { pattern = pattern.ToLower(); }
+            if (_forceUpper) { pattern = pattern.ToUpper(); }
             for (int i = 0; i < pattern.Length;)
             {
                 uint c = pattern[i++];
@@ -550,6 +571,8 @@ namespace ftss
             {
                 return ToList();
             }
+            if (_forceLower) { suffix = suffix.ToLower(); }
+            if (_forceUpper) { suffix = suffix.ToUpper(); }
             IList<string> results = [];
             IList<uint> pat = FastTernaryStringSet.ToCodePoints(suffix);
 
@@ -590,6 +613,8 @@ namespace ftss
             {
                 return ToList();
             }
+            if (_forceLower) { prefix = prefix.ToLower(); }
+            if (_forceUpper) { prefix = prefix.ToUpper(); }
 
             IList<string> results = [];
             IList<uint> pat = FastTernaryStringSet.ToCodePoints(prefix);
@@ -655,7 +680,8 @@ namespace ftss
             {
                 return _hasEmpty ? [""] : [];
             }
-
+            if (_forceLower) { pattern = pattern.ToLower(); }
+            if (_forceUpper) { pattern = pattern.ToUpper(); }
             IList<string> matches = [];
             GetPartialMatches(0, pattern, 0, dontCareChar[0], [], matches);
             return matches;
@@ -685,6 +711,8 @@ namespace ftss
         {
             ArgumentNullException.ThrowIfNull(pattern);
             ArgumentOutOfRangeException.ThrowIfNegative(distance);
+            if (_forceLower) { pattern = pattern.ToLower(); }
+            if (_forceUpper) { pattern = pattern.ToUpper(); }
             if (distance < 1)
             {
                 return Has(pattern) ? [pattern] : [];
@@ -782,7 +810,8 @@ namespace ftss
         {
             ArgumentNullException.ThrowIfNull(pattern);
             ArgumentOutOfRangeException.ThrowIfNegative(distance);
-
+            if (_forceLower) { pattern = pattern.ToLower(); }
+            if (_forceUpper) { pattern = pattern.ToUpper(); }
             if (distance < 1 || pattern.Length == 0)
             {
                 return Has(pattern) ? [pattern] : [];
@@ -878,6 +907,8 @@ namespace ftss
             {
                 return _hasEmpty;
             }
+            if (_forceLower) { s = s.ToLower(); }
+            if (_forceUpper) { s = s.ToUpper(); }
             return Has(0, s, 0, s[0]);
         }
 

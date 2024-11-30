@@ -4,7 +4,8 @@
              xmlns:ui="http://schemas.modernwpf.com/2019"
              xmlns:local="clr-namespace:WordLists.Wpf"
              StartupUri="MainWindow.xaml"
-             ThemeMode="System">
+             ThemeMode="None"
+             >
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
