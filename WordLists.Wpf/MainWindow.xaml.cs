@@ -296,6 +296,8 @@ namespace WordLists.Wpf
             if (includeFtssUrl)
             {
                 await writer.WriteLineAsync(" *   https://github.com/robo-technical-group/pxt-fast-ternary-string-set.git");
+                await writer.WriteLineAsync(" * Note that large string sets will take some time to load into memory.");
+                await writer.WriteLineAsync(" * You may want to wrap the variable creation into a timer.background() function.");
             }
             await writer.WriteLineAsync(" */ ");
             await writer.WriteLineAsync();
