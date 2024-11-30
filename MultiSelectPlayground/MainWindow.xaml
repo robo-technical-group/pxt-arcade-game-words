@@ -1,0 +1,84 @@
+﻿<Window x:Class="MultiSelectPlayground.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MultiSelectPlayground"
+        mc:Ignorable="d"
+        Title="MainWindow"
+        SizeToContent="WidthAndHeight"
+        DataContext="{Binding RelativeSource={RelativeSource Self}}"
+        >
+    <Window.Resources>
+        <RoutedCommand x:Key="Check1" />
+        <RoutedCommand x:Key="Check2" />
+        <RoutedCommand x:Key="Check3" />
+    </Window.Resources>
+    <Window.CommandBindings>
+        <CommandBinding Command="{StaticResource Check1}" Executed="Check1_Executed" />
+        <CommandBinding Command="{StaticResource Check2}" Executed="Check2_Executed" />
+        <CommandBinding Command="{StaticResource Check3}" Executed="Check3_Executed" />
+    </Window.CommandBindings>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="100" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+        </Grid.RowDefinitions>
+
+        <ListBox ItemsSource="{Binding Statuses1}" Grid.Row="0" Grid.Column="0">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <CheckBox IsChecked="{Binding IsSelected}" />
+                        <TextBlock Text="{Binding StatusCode}" />
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <Button Command="{StaticResource Check1}" Width="200" Grid.Row="1" Grid.Column="0">
+            What is checked 1?
+        </Button>
+        <TextBox Text="{Binding CheckedList1}" Grid.Row="2" Grid.Column="0" />
+
+        <ListBox ItemsSource="{Binding Statuses2}" SelectionMode="Extended" Grid.Row="0" Grid.Column="1">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding StatusCode}" />
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="IsSelected" Value="{Binding IsSelected}" />
+                </Style>
+            </ListBox.ItemContainerStyle>
+        </ListBox>
+        <Button Command="{StaticResource Check2}" Width="200" Grid.Row="1" Grid.Column="1">
+            What is checked 2?
+        </Button>
+        <TextBox Text="{Binding CheckedList2}" Grid.Row="2" Grid.Column="1" />
+
+        <ListBox Name="Statuses3ListBox"
+                 ItemsSource="{Binding Statuses3}" SelectionMode="Multiple"
+                 Grid.Row="0" Grid.Column="2">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <DockPanel>
+                        <CheckBox IsChecked="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ListBoxItem}, Path=IsSelected}"
+                                  DockPanel.Dock="Left" />
+                        <TextBlock Text="{Binding}" />
+                    </DockPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <Button Command="{StaticResource Check3}" Width="200" Grid.Row="1" Grid.Column="2">
+            What is checked 3?
+        </Button>
+        <TextBox Text="{Binding CheckedList3}" Grid.Row="2" Grid.Column="2" />
+    </Grid>
+</Window>

@@ -16,6 +16,7 @@ namespace WordLists.Wpf
     {
         public ObservableCollection<string> ExclusionFiles { get; set; }
         public ObservableCollection<string> WordFiles { get; set; }
+        public ObservableCollection<int> WordLengths { get; set; }
 
         protected const string INDENT = "    ";
 
@@ -26,7 +27,7 @@ namespace WordLists.Wpf
         {
             ExclusionFiles = [];
             WordFiles = [];
-            DataContext = this;
+            WordLengths = [];
             InitializeComponent();
         }
 
@@ -45,7 +46,7 @@ namespace WordLists.Wpf
             }
         }
 
-        private void AddWordList()
+        private async Task AddWordList()
         {
             OpenFileDialog ofd = new()
             {
@@ -57,109 +58,137 @@ namespace WordLists.Wpf
             if (result == true)
             {
                 WordFiles.Add(ofd.FileName);
+                await GetWordLengths(ofd.FileName);
             }
         }
 
         private async Task Build()
         {
+            if (WordLengthListBox.SelectedItems.Count == 0)
+            {
+                MessageBox.Show("Select at least one word length to include in output file.");
+                return;
+            }
+            List<int> wordLengths = [];
+            foreach (var item in WordLengthListBox.SelectedItems)
+            {
+                wordLengths.Add((int)item);
+            }
             SaveFileDialog sfd = new()
             {
                 DefaultExt = ".ts",
                 Filter = "TypeScript files (.ts)|*.ts",
             };
             bool? result = sfd.ShowDialog();
-            if (result == true)
+            if (result == false) { return; }
+            List<string> exclusions = [];
+            string? line;
+            foreach (string exclusionFile in ExclusionFiles)
             {
-                List<string> exclusions = [];
-                string? line;
-                foreach (string exclusionFile in ExclusionFiles)
+                using StreamReader reader = new(exclusionFile);
+                while ((line = await reader.ReadLineAsync()) is not null)
                 {
-                    using StreamReader reader = new(exclusionFile);
-                    while ((line = await reader.ReadLineAsync()) is not null)
-                    {
-                        exclusions.Add(line.ToUpper());
-                    }
+                    exclusions.Add(line.ToUpper());
                 }
+            }
 
-                WordLookup filter = new();
-                FastTernaryStringSet wordset = [];
-                wordset.ForceUppercase = true;
-                bool areWordStems = WordStemCheckBox.IsChecked ?? false;
-                bool useBloom = BloomCheckBox.IsChecked ?? false;
-                bool useFtss = FtssCheckBox.IsChecked ?? false;
-                foreach (string wordFile in  WordFiles)
-                {
-                    if (useBloom)
-                    {
-                        await filter.ScanFile(wordFile);
-                    }
-                    using StreamReader reader = new(wordFile);
-                    while ((line = await reader.ReadLineAsync()) is not null)
-                    {
-                        string word = line.ToUpper();
-                        if (areWordStems)
-                        {
-                            bool goodWord = true;
-                            foreach (string stem in exclusions)
-                            {
-                                if (word.Contains(stem))
-                                {
-                                    goodWord = false;
-                                    break;
-                                }
-                            }
-                            if (goodWord)
-                            {
-                                if (useBloom)
-                                {
-                                    filter.AddWord(line);
-                                }
-                                if (useFtss)
-                                {
-                                    wordset.Add(line);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (!exclusions.Contains(word))
-                            {
-                                if (useBloom)
-                                {
-                                    filter.AddWord(line);
-                                }
-                                if (useFtss)
-                                {
-                                    wordset.Add(line);
-                                }
-                            }
-                        }
-                    }
-                }
-                if (useFtss)
-                {
-                    wordset.Balance();
-                    wordset.Compact();
-                }
-                using StreamWriter writer = new(sfd.FileName);
-                await WriteHeader(writer, useBloom, useFtss);
+            WordLookup filter = new();
+            FastTernaryStringSet wordset = [];
+            wordset.ForceUppercase = true;
+            bool areWordStems = WordStemCheckBox.IsChecked ?? false;
+            bool useBloom = BloomCheckBox.IsChecked ?? false;
+            bool useFtss = FtssCheckBox.IsChecked ?? false;
+            foreach (string wordFile in  WordFiles)
+            {
                 if (useBloom)
                 {
-                    await WriteBloom(writer, filter,
-                        String.IsNullOrWhiteSpace(BloomNameTextBox.Text) ?
-                        "Bloom Filter" :
-                        BloomNameTextBox.Text.Trim());
+                    await filter.ScanFile(wordFile);
                 }
-                if (useFtss)
+                using StreamReader reader = new(wordFile);
+                while ((line = await reader.ReadLineAsync()) is not null)
                 {
-                    await WriteFtss(writer, wordset,
-                        String.IsNullOrWhiteSpace(FtssNameTextBox.Text) ?
-                        "Word Set" :
-                        FtssNameTextBox.Text.Trim());
+                    line = line.Trim();
+                    string word = line.ToUpper();
+                    if (!wordLengths.Contains(word.Length)) { continue; }
+                    if (areWordStems)
+                    {
+                        bool goodWord = true;
+                        foreach (string stem in exclusions)
+                        {
+                            if (word.Contains(stem))
+                            {
+                                goodWord = false;
+                                break;
+                            }
+                        }
+                        if (goodWord)
+                        {
+                            if (useBloom)
+                            {
+                                filter.AddWord(line);
+                            }
+                            if (useFtss)
+                            {
+                                wordset.Add(line);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (!exclusions.Contains(word))
+                        {
+                            if (useBloom)
+                            {
+                                filter.AddWord(line);
+                            }
+                            if (useFtss)
+                            {
+                                wordset.Add(line);
+                            }
+                        }
+                    }
                 }
-                await WriteFooter(writer);
+            }
+            if (useFtss)
+            {
+                wordset.Balance();
+                wordset.Compact();
+            }
+            using StreamWriter writer = new(sfd.FileName);
+            await WriteHeader(writer, useBloom, useFtss);
+            if (useBloom)
+            {
+                await WriteBloom(writer, filter,
+                    String.IsNullOrWhiteSpace(BloomNameTextBox.Text) ?
+                    "Bloom Filter" :
+                    BloomNameTextBox.Text.Trim());
+            }
+            if (useFtss)
+            {
+                await WriteFtss(writer, wordset,
+                    String.IsNullOrWhiteSpace(FtssNameTextBox.Text) ?
+                    "Word Set" :
+                    FtssNameTextBox.Text.Trim());
+            }
+            await WriteFooter(writer);
 
-                MessageBox.Show($"Done! Output file: {sfd.FileName}.");
+            MessageBox.Show($"Done! Output file: {sfd.FileName}.");
+        }
+
+        private async Task GetWordLengths(string filename)
+        {
+            if (!File.Exists(filename)) { return; }
+            using StreamReader reader = new(filename);
+            string? line;
+            while ((line = await reader.ReadLineAsync()) is not null)
+            {
+                line = line.Trim();
+                if (line.Length > 0 &&
+                    !WordLengths.Contains(line.Length)
+                )
+                {
+                    WordLengths.Add(line.Length);
+                }
             }
         }
 
@@ -305,9 +334,9 @@ namespace WordLists.Wpf
             await writer.WriteLineAsync(@"namespace WordLists {");
         }
 
-        private void AddWordList_Click(object sender, RoutedEventArgs e)
+        private async void AddWordList_Click(object sender, RoutedEventArgs e)
         {
-            AddWordList();
+            await AddWordList();
         }
 
         private void RemoveWordList_Click(object sender, RoutedEventArgs e)
@@ -328,6 +357,16 @@ namespace WordLists.Wpf
         private async void Build_Click(object sender, RoutedEventArgs e)
         {
             await Build();
+        }
+
+        private void SelectAll_Click(object sender, RoutedEventArgs e)
+        {
+            WordLengthListBox.SelectAll();
+        }
+
+        private void SelectNone_Click(object sender, RoutedEventArgs e)
+        {
+            WordLengthListBox.UnselectAll();
         }
     }
 }

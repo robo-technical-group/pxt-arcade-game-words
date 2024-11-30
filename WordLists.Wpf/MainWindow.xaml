@@ -7,7 +7,9 @@
         ui:WindowHelper.UseModernWindowStyle="True"
         xmlns:local="clr-namespace:WordLists.Wpf"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        DataContext="{Binding RelativeSource={RelativeSource Self}}"
+        Title="MainWindow" Height="450" Width="800"
+        >
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -47,6 +49,15 @@
             <ListBox Name="ExclusionListBox" ItemsSource="{Binding ExclusionFiles}" Height="100"></ListBox>
         </StackPanel>
         <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="0">
+            <ListBox Name="WordLengthListBox" ItemsSource="{Binding WordLengths}"
+                     SelectionMode="Multiple"
+                     Height="200" />
+            <StackPanel Orientation="Horizontal">
+                <Button Name="SelectAllButton" Click="SelectAll_Click">Select all</Button>
+                <Button Name="SelectNoneButton" Click="SelectNone_Click">Select none</Button>
+            </StackPanel>
+        </StackPanel>
+        <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="1">
             <StackPanel Orientation="Horizontal">
                 <CheckBox Name="BloomCheckBox">Include Bloom Filter</CheckBox>
                 <Label>Block name</Label>
@@ -57,7 +68,7 @@
                 <Label>Block name</Label>
                 <TextBox Name="FtssNameTextBox" Width="100"></TextBox>
             </StackPanel>
+            <Button Name="BuildButton" Click="Build_Click" Grid.Row="1" Grid.Column="1">Build</Button>
         </StackPanel>
-        <Button Name="BuildButton" Click="Build_Click" Grid.Row="1" Grid.Column="1">Build</Button>
     </Grid>
 </Window>

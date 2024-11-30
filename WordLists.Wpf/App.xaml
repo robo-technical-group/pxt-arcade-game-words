@@ -12,7 +12,6 @@
                 <ui:ThemeResources />
                 <ui:XamlControlsResources />
                 <!-- Other merged dictionaries here -->
-                <ResourceDictionary Source="pack://application:,,,/PresentationFramework.Fluent;component/Themes/Fluent.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <!-- Other app resources here -->
         </ResourceDictionary>
