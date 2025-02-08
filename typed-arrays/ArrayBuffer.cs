@@ -39,7 +39,7 @@
 namespace typed_arrays;
 public class ArrayBuffer
 {
-    protected readonly int B64_PARTITION_SIZE = 80;
+    protected readonly int STRING_SET_PARTITION_SIZE = 80;
     protected int _byteLength;
     protected IList<uint> _bytes;
 
@@ -92,7 +92,14 @@ public class ArrayBuffer
     {
         TypedArray<byte> array = new(this);
         string r = Convert.ToBase64String(array.ToArray());
-        return r.Partition(B64_PARTITION_SIZE);
+        return r.Partition(STRING_SET_PARTITION_SIZE);
+    }
+
+    public IEnumerable<string> ToBase91StringSet()
+    {
+        TypedArray<byte> array = new(this);
+        string r = BaseX.AsciiRadixCoder.Base91Coder().Encode(array.ToArray());
+        return r.Partition(STRING_SET_PARTITION_SIZE);
     }
 
     public IList<uint> ToList() { return [.. _bytes]; }

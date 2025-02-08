@@ -117,6 +117,13 @@ public class TypedArray<T> : IEnumerable<T> where T : IBinaryInteger<T>
         return FromTypedArray(b);
     }
 
+    public static TypedArray<T> FromBase91StringSet(IEnumerable<string> strings)
+    {
+        string s = String.Join(string.Empty, strings);
+        TypedArray<byte> b = new(BaseX.AsciiRadixCoder.Base91Coder().Decode(s));
+        return FromTypedArray(b);
+    }
+
     public static TypedArray<T> FromTypedArray<U>(TypedArray<U> source) where U : IBinaryInteger<U>
     {
         TypedArray<T> r = new(source._length);

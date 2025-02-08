@@ -1,10 +1,9 @@
 ﻿using ftss;
-using System.Diagnostics;
 using typed_arrays;
 
 namespace ftss_tests;
 [TestClass]
-public class SerializationTests
+public class SerializationTestsB64
 {
     [TestMethod]
     public void EmptyTreeHeaderOnly()
@@ -75,7 +74,7 @@ public class SerializationTests
         test.Compact();
 
         // Act
-        string[] stringSet = (await Common.GetResourceFileContents("serialized-short-list.txt"))
+        string[] stringSet = (await Common.GetResourceFileContents("serialized-short-list-b64.txt"))
             .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         /*
         Debug.WriteLine("String set:");

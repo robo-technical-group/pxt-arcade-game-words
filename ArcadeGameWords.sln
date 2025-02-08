@@ -27,6 +27,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Primes.tests", "Primes.test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiSelectPlayground", "MultiSelectPlayground\MultiSelectPlayground.csproj", "{9DD0E060-2A32-461D-93E0-2753C9992E4D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BaseX", "BaseX\BaseX.csproj", "{1506FD52-5E60-4CFC-9FDB-937DD156B105}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BaseX-Tests", "BaseX-Tests\BaseX-Tests.csproj", "{24DAFB15-0764-41C1-BD79-BCC499282B51}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -81,6 +85,14 @@ Global
 		{9DD0E060-2A32-461D-93E0-2753C9992E4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9DD0E060-2A32-461D-93E0-2753C9992E4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9DD0E060-2A32-461D-93E0-2753C9992E4D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1506FD52-5E60-4CFC-9FDB-937DD156B105}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1506FD52-5E60-4CFC-9FDB-937DD156B105}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1506FD52-5E60-4CFC-9FDB-937DD156B105}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1506FD52-5E60-4CFC-9FDB-937DD156B105}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24DAFB15-0764-41C1-BD79-BCC499282B51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24DAFB15-0764-41C1-BD79-BCC499282B51}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24DAFB15-0764-41C1-BD79-BCC499282B51}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24DAFB15-0764-41C1-BD79-BCC499282B51}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
